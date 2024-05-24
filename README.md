@@ -138,7 +138,7 @@ The prediction model consumes a video stream frame-by-frame and feeds each frame
 
 (Configuration keys: `tracker` and `notification_criteria`.)
 
-The tracker process aggregates the model's predictions over time, building tracks that represent the movement over time of individual objects in the video stream. Every time a track is updated with a prediction from a new frame, the tracker evaluates the track against the notification criteria. If the track meets the criteria, a notification is triggered.
+The tracker process aggregates the model's predictions over time, building tracks that represent the movement of individual objects in the video stream. Every time a track is updated with a prediction from a new frame, the tracker evaluates the track against the notification criteria. If the track meets the criteria, a notification is triggered.
 
 ### Notifier
 
