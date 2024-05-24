@@ -132,7 +132,7 @@ This section briefly explains the different components of the program. In partic
 
 (Configuration key: `model`.)
 
-The prediction model consumes a video stream frame-by-frame and feeds each frame to the YOLOv8 model. The model produces predictions of objects in the frame, including their classifications (e.g. "car") and rectangular bounding boxes. These predictions are passed to the tracker process.
+The prediction process consumes a video stream frame-by-frame and feeds each frame to the YOLOv8 model. The model produces predictions of objects in the frame, including their classifications (e.g. "car") and rectangular bounding boxes. These predictions are passed to the tracker process.
 
 ### Tracker
 
