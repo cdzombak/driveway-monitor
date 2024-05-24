@@ -1,0 +1,36 @@
+# for amd64/cuda
+# see: https://github.com/ultralytics/ultralytics/blob/main/docker/Dockerfile
+
+FROM amd64/python:3-bookworm
+ARG BIN_VERSION=<unknown>
+
+RUN apt-get -y update \
+    && apt-get install --no-install-recommends -y \
+        curl libgl1 libpython3-dev python3-opencv \
+    && rm -rf /var/lib/apt/lists/*
+
+# Avoid DDP error "MKL_THREADING_LAYER=INTEL is incompatible with libgomp.so.1 library" https://github.com/pytorch/pytorch/issues/37377
+# per https://github.com/ultralytics/ultralytics/blob/main/docker/Dockerfile
+ENV MKL_THREADING_LAYER=GNU
+
+RUN mkdir /app
+COPY ./*.py ./requirements.txt /app/
+RUN pip install --no-cache-dir nvidia-tensorrt
+RUN pip install --no-cache-dir -r /app/requirements.txt
+
+WORKDIR /app
+RUN curl -f -L -O https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov8n.pt
+ENV DM_DOCKER_ALSO_BIND="*:2856"
+HEALTHCHECK CMD curl -s --max-time 2 --fail http://localhost:2856/health || exit 1
+ENTRYPOINT ["python3", "main.py"]
+
+LABEL license="GPL-3.0"
+LABEL maintainer="Chris Dzombak <https://www.dzombak.com>"
+LABEL org.opencontainers.image.authors="Chris Dzombak <https://www.dzombak.com>"
+LABEL org.opencontainers.image.url="https://github.com/cdzombak/driveway-monitor"
+LABEL org.opencontainers.image.documentation="https://github.com/cdzombak/driveway-monitor/blob/main/README.md"
+LABEL org.opencontainers.image.source="https://github.com/cdzombak/driveway-monitor.git"
+LABEL org.opencontainers.image.version="${BIN_VERSION}"
+LABEL org.opencontainers.image.licenses="GPL-3.0"
+LABEL org.opencontainers.image.title="driveway-monitor"
+LABEL org.opencontainers.image.description="Receive customizable, AI-powered notifications when someone arrives in your driveway."

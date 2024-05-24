@@ -1,0 +1,15 @@
+---
+version: "3"
+
+tasks:
+  fmt:
+    cmds:
+      - ruff format
+      - prettier --write .
+  lint:
+    cmds:
+      - ruff check
+      - prettier --check .
+  test:
+    cmds:
+      - python -m unittest tests/*.py
