@@ -220,7 +220,7 @@ class Notifier(lib_mpex.ChildProcess):
 
         while True:
             n: Notification = self._input_queue.get()
-            logger.debug("received notification: " + n.title())
+            logger.debug("received notification: " + n.message())
 
             if isinstance(n, ObjectNotification):
                 if self._suppress(logger, n):
@@ -249,7 +249,7 @@ class Notifier(lib_mpex.ChildProcess):
                     headers=headers,
                     timeout=self._config.req_timeout_s,
                 )
-                logger.info(f"notification '{n.title()}' sent")
+                logger.info(f"notification '{n.message()}' sent")
             except requests.RequestException as e:
                 logger.error(f"error sending notification: {e}")
 
