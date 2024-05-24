@@ -27,7 +27,7 @@ Due to the Python 3.12 requirement and the annoyance of maintaining a virtualenv
 - `cdzombak/driveway-monitor:*-amd64-cuda`: NVIDIA image for amd64 hosts
 - `cdzombak/driveway-monitor:*-amd64-cpu`: CPU-only image for amd64 hosts
 
-An Apple Silicon & Raspberry Pi compatible arm64 image (`cdzombak/driveway-monitor:arm64-*`) is planned (see issue # TK).
+An Apple Silicon & Raspberry Pi compatible arm64 image (`cdzombak/driveway-monitor:arm64-*`) is planned ([see issue #2](https://github.com/cdzombak/driveway-monitor/issues/2)).
 
 > [!NOTE]
 > To run the model on an Apple Silicon GPU, you'll need to set up a Python virtualenv and run `driveway-monitor` directly, not via Docker. See "Running under Python/virtualenv" below.
