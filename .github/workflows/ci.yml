@@ -78,7 +78,7 @@ jobs:
           pip install ruff
       - name: Run Ruff
         run: |
-          ruff format --output-format=github .
+          ruff format --check .
           ruff check --output-format=github .
       - name: Install Prettier
         run: npm install -g prettier
