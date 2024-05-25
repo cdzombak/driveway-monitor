@@ -142,11 +142,14 @@ jobs:
           images: |
             ${{ needs.meta.outputs.dockerhub_owner }}/${{ needs.meta.outputs.project_name }}
           tags: |
-            type=ref,event=branch,suffix=-amd64-cuda
-            type=ref,event=pr,suffix=-amd64-cuda
-            type=semver,pattern={{version}},suffix=-amd64-cuda
-            type=semver,pattern={{major}}.{{minor}},suffix=-amd64-cuda
-            type=semver,pattern={{major}},suffix=-amd64-cuda
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+          flavor: |
+            latest=false
+            suffix=-amd64-cuda
 
       - name: "Build & Push: amd64-cuda"
         uses: docker/build-push-action@v5
@@ -168,11 +171,14 @@ jobs:
           images: |
             ${{ needs.meta.outputs.dockerhub_owner }}/${{ needs.meta.outputs.project_name }}
           tags: |
-            type=ref,event=branch,suffix=-amd64-cpu
-            type=ref,event=pr,suffix=-amd64-cpu
-            type=semver,pattern={{version}},suffix=-amd64-cpu
-            type=semver,pattern={{major}}.{{minor}},suffix=-amd64-cpu
-            type=semver,pattern={{major}},suffix=-amd64-cpu
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+          flavor: |
+            latest=false
+            suffix=-amd64-cpu
 
       - name: "Build & Push: amd64-cpu"
         uses: docker/build-push-action@v5
