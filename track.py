@@ -295,7 +295,7 @@ class PredModel(lib_mpex.ChildProcess):
                     or (utcnow - last_liveness_tick_at) > liveness_tick_t
                 ):
                     if last_liveness_tick_at is not None:
-                        logger.info(
+                        logger.debug(
                             f"liveness tick at {utcnow}; processed "
                             f"{frames_since_last_liveness_tick} frames since last tick "
                             f"({frames_since_last_liveness_tick / (utcnow - last_liveness_tick_at).total_seconds()} fps)"
