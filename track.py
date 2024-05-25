@@ -153,10 +153,6 @@ class VideoEnded(Exception):
     pass
 
 
-class ImageEncodeError(Exception):
-    pass
-
-
 @dataclass
 class ModelConfig:
     log_level: Optional[int] = logging.INFO
