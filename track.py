@@ -5,7 +5,7 @@ import multiprocessing
 import os
 import time
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, Final
 
 # noinspection PyPackageRequirements
 import celpy
@@ -149,7 +149,7 @@ class Track:
             self.best_image_coverage = image_coverage
 
 
-class VideoStreamEnded(Exception):
+class VideoEnded(Exception):
     pass
 
 
@@ -183,26 +183,17 @@ class PredModel(lib_mpex.ChildProcess):
         self._health_ping_queue = health_ping_queue
 
     def _run(self):
-        is_stream = self._in_fname.casefold().startswith(
+        is_stream: Final = self._in_fname.casefold().startswith(
             "rtsp:"
         ) or self._in_fname.casefold().startswith("rtsps:")
 
-        liveness_tick_t = datetime.timedelta(seconds=self._config.liveness_tick_s)
-        last_liveness_tick_at: Optional[datetime.datetime] = None
-        frames_since_last_liveness_tick = 0
-
-        logger = logging.getLogger(__name__ + ":Model")
+        logger: Final = logging.getLogger(__name__ + ":Model")
         logging.basicConfig(level=self._config.log_level)
+        logger.debug(f"healthcheck ping URL: {self._config.healthcheck_ping_url}")
 
-        logger.info(f"opening video source {self._in_fname}")
-        cap = cv2.VideoCapture(self._in_fname)
-        if not cap.isOpened():
-            raise IOError(f"failed to open video source {self._in_fname}")
-        # cap.setExceptionMode(True)
-
-        mfname = "yolov8n.pt"
-        logger.info(f"starting model {mfname}")
-        model = YOLO(mfname)
+        model_name: Final = "yolov8n.pt"
+        logger.info(f"starting model {model_name}")
+        model = YOLO(model_name)
 
         dev = self._config.device
         if dev is None:
@@ -219,9 +210,55 @@ class PredModel(lib_mpex.ChildProcess):
             half = True
         else:
             half = False
-        logger.info(f"YOLO model will use device '{dev}' (half={half})")
-        logger.debug(f"healthcheck ping URL: {self._config.healthcheck_ping_url}")
+        logger.info(f"{model_name} will use device '{dev}' (half={half})")
 
+        keep_trying = True
+        retryable_failures_at: List[datetime.datetime] = []
+        retryable_failure_threshold_window: Final = datetime.timedelta(seconds=30)
+        retryable_failure_threshold: Final = 10
+        while keep_trying:
+            keep_trying = False
+            try:
+                self._run_capture_loop(dev, half, logger, model)
+            except VideoEnded:
+                if is_stream:
+                    # if we're consuming a stream, try to restart it as long as we
+                    # don't see 10 failures in 30 seconds:
+                    utcnow = datetime.datetime.now(datetime.UTC)
+                    retryable_failures_at.append(utcnow)
+                    retryable_failures_at = [
+                        t
+                        for t in retryable_failures_at
+                        if utcnow - t < retryable_failure_threshold_window
+                    ]
+                    if len(retryable_failures_at) < retryable_failure_threshold:
+                        logger.info("attempting to reopen stream ...")
+                        keep_trying = True
+                    else:
+                        logger.error(
+                            f"too many stream failures ({len(retryable_failures_at)} in "
+                            f"{retryable_failure_threshold_window.seconds} sec)"
+                        )
+                        raise
+                else:
+                    # video ended, but it's not a stream, so we're done successfully:
+                    pass
+            # any other exceptions (e.g. IOError opening a video file)
+            # will continue propagating and be handled by the parent process
+
+        # at this point we're done, with no error; delay exit if requested:
+        self._delay_exit_if_requested(logger)
+
+    def _run_capture_loop(self, dev, half, logger, model):
+        liveness_tick_t: Final = datetime.timedelta(
+            seconds=self._config.liveness_tick_s
+        )
+        last_liveness_tick_at: Optional[datetime.datetime] = None
+        frames_since_last_liveness_tick = 0
+        logger.info(f"opening video source {self._in_fname}")
+        cap = cv2.VideoCapture(self._in_fname)
+        if not cap.isOpened():
+            raise IOError(f"failed to open video source {self._in_fname}")
         while cap.isOpened():
             success, frame = cap.read()
             if success:
@@ -271,14 +308,10 @@ class PredModel(lib_mpex.ChildProcess):
                         )
             else:
                 logger.info(f"video source {self._in_fname} ended")
-                self._delay_exit_if_requested(logger)
-                if is_stream:
-                    raise VideoStreamEnded()
-                else:
-                    return
+                raise VideoEnded
 
-    # noinspection PyMethodMayBeStatic
-    def _delay_exit_if_requested(self, logger):
+    @staticmethod
+    def _delay_exit_if_requested(logger):
         exit_mins_str = os.getenv("DM_DEV_EXIT_DELAY_MINS", "")
         if not exit_mins_str:
             return
@@ -431,7 +464,7 @@ class Tracker(lib_mpex.ChildProcess):
                     f"skip further processing"
                 )
                 continue
-            min_track_len = datetime.timedelta(
+            min_track_len: Final = datetime.timedelta(
                 seconds=self._config.notify_min_track_length_s_per_classification.get(
                     track.classification(), self._config.notify_min_track_length_s
                 )
