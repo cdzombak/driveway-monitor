@@ -248,7 +248,7 @@ The origin for box coordinates `(0, 0)` is the top-left corner of the frame. Coo
 
 #### Movement vector
 
-A track's movement vector is calculated from the center of the prediction box at the start of the track, to the center of the most recent prediction box in the track. It has two properties, `length` and `direction`.
+A track's movement vector is calculated from the center of the prediction box at the start of the track, to the center of the most recent prediction box in the track. It has three properties: `length`, `direction`, and `direction360`.
 
 ##### `length`
 
@@ -293,9 +293,11 @@ A length of `1` would cover the entire frame vertically or horizontally; a lengt
 
 The direction of the vector, in degrees, from `[-180, 180)`.
 
-`0°` is straight to the right of frame; `90º` is straight up; `-180º` is straight left; `-90º` is straight down:
+`0°` is straight to the **right** of frame; `90º` is straight **up**; `-180º` is straight **left**; `-90º` is straight **down**:
 
 ```text
+direction of a vector from point a to b:
+
              ┌───┐
              │ b │
       ┌───┐  └─▲─┘  ┌───┐
@@ -311,6 +313,36 @@ The direction of the vector, in degrees, from `[-180, 180)`.
      -135º╱    │    ╲-45º
          ╱     │     ╲
       ┌─▼─┐  -90º   ┌─▼─┐
+      │ b │    │    │ b │
+      └───┘  ┌─▼─┐  └───┘
+             │ b │
+             └───┘
+```
+
+##### `direction360`
+
+The direction of the vector, in degrees, from `[0, 360)`. This is just `direction + 180`, but depending on the video in your use case, it may be more convenient to work with this figure instead of `direction`.
+
+`0°` is straight to the **left** of frame; `90º` is straight **down**; `180º` is straight **right**; `270º` is straight **up**:
+
+```text
+direction360 of a vector from point a to b:
+
+             ┌───┐
+             │ b │
+      ┌───┐  └─▲─┘  ┌───┐
+      │ b │    │    │ b │
+      └─▲─┘  270º   └─▲─┘
+         ╲     │     ╱
+      315º╲    │    225º
+           ╳───┴───╳
+┌───┐      │       │  180º┌───┐
+│ b ◀──────┤   a   │──────▶ b │
+└───┘  0º  │       │      └───┘
+           ╳───┬───╳
+      45º ╱    │    ╲135º
+         ╱     │     ╲
+      ┌─▼─┐   90º   ┌─▼─┐
       │ b │    │    │ b │
       └───┘  ┌─▼─┐  └───┘
              │ b │

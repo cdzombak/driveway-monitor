@@ -6,22 +6,23 @@ from lib_geom import Point, Vector, Box
 class TestVector(TestCase):
     def test_from_points(self):
         v = Vector.from_points(Point(0, 0), Point(0, 0))  # no movement
-        self.assertEqual(Vector(length=0, direction=0), v)
+        self.assertEqual(Vector(length=0, direction=0, direction360=180), v)
 
         v = Vector.from_points(Point(0, 1), Point(0, 0))  # straight up
-        self.assertEqual(Vector(length=1, direction=90), v)
+        self.assertEqual(Vector(length=1, direction=90, direction360=270), v)
 
         v = Vector.from_points(Point(0, 0), Point(0, 1))  # straight down
-        self.assertEqual(Vector(length=1, direction=-90), v)
+        self.assertEqual(Vector(length=1, direction=-90, direction360=90), v)
 
         v = Vector.from_points(Point(1, 0), Point(0, 0))  # straight left
-        self.assertEqual(Vector(length=1, direction=-180), v)
+        self.assertEqual(Vector(length=1, direction=-180, direction360=0), v)
 
         v = Vector.from_points(Point(0, 0), Point(1, 0))  # straight right
-        self.assertEqual(Vector(length=1, direction=0), v)
+        self.assertEqual(Vector(length=1, direction=0, direction360=180), v)
 
         v = Vector.from_points(Point(1, 2), Point(0, 1))  # up and to the left
         self.assertEqual(135, v.direction)
+        self.assertEqual(315, v.direction360)
         self.assertTrue(float_eq(1.414, v.length), f"(got {v.length}")
 
         v = Vector.from_points(Point(0, 2), Point(1, 1))  # up and to the right
@@ -30,10 +31,12 @@ class TestVector(TestCase):
 
         v = Vector.from_points(Point(2, 1), Point(1, 2))  # down and to the left
         self.assertEqual(-135, v.direction)
+        self.assertEqual(45, v.direction360)
         self.assertTrue(float_eq(1.414, v.length), f"(got {v.length}")
 
         v = Vector.from_points(Point(1, 1), Point(2, 2))  # down and to the right
         self.assertEqual(-45, v.direction)
+        self.assertEqual(135, v.direction360)
         self.assertTrue(float_eq(1.414, v.length), f"(got {v.length}")
 
 

@@ -118,6 +118,7 @@ class Vector:
     #              │ b │
     #              └───┘
     direction: float
+    direction360: float
     length: float
 
     def to_cel(self) -> celpy.celtypes.Value:
@@ -128,6 +129,7 @@ class Vector:
         return celpy.celtypes.MapType(
             {
                 "direction": celpy.celtypes.DoubleType(self.direction),
+                "direction360": celpy.celtypes.DoubleType(self.direction360),
                 "length": celpy.celtypes.DoubleType(self.length),
             }
         )
@@ -136,7 +138,9 @@ class Vector:
     def from_points(a: Point, b: Point) -> "Vector":
         dx = b.x - a.x
         dy = b.y - a.y
+        direct = -1 * math.degrees(math.atan2(dy, dx))
         return Vector(
             length=(dx**2 + dy**2) ** 0.5,
-            direction=-1 * math.degrees(math.atan2(dy, dx)),
+            direction=direct,
+            direction360=direct + 180.0,
         )
