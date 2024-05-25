@@ -194,20 +194,20 @@ The file is a single JSON object containing the following keys, or a subset ther
 
 This field is a string representing a [CEL](https://cel.dev) expression that will be evaluated for each track. If the expression evaluates to `true`, a notification will be sent.
 
-The expression has access to a single variable, `track`. This variable is a CEL map with the following keys:
+The expression has access to a single variable, `track`. This variable is a dictionary (aka map) with the following keys:
 
-- `classification` (string): classification of the object in the track.
+- `classification` _(string)_: classification of the object in the track.
 - `predictions`: list of `Prediction`s from the model included in this track, each of which have:
   - `box`: the `Box` for this prediction
   - `classification` (string): classification of the object
-  - `t` timestamp
+  - `t`: the timestamp of the prediction
 - `first_t`: timestamp of the first prediction in the track
 - `last_t`: timestamp of the last prediction in the track
 - `length_t`: duration of the track, in seconds (this is just `last_t - first_t`)
 - `first_box`: the first prediction's `Box`
-- `last_box`: the last prediction's `Box`
-- `average_box`: the average of the first and last prediction's `Box`
+- `last_box`: the most recent prediction's `Box`
 - `total_box`: the smallest `Box` that covers all predictions in the track
+- `average_box`: the average of every `Box` in the track
 
 Each `Box` has:
 
@@ -218,47 +218,103 @@ Each `Box` has:
 - `h`: height of the box
 - `area`: area of the box
 
-Finally, a `Point` has:
+Finally, each `Point` has:
 
 - `x`: x-coordinate
 - `y`: y-coordinate
 
 #### Box coordinates
 
-Coordinates are floats between 0 and 1, on both axes.
+Coordinates are floats between `0` and `1`, on both axes.
 
-The origin for box coordinates (`(0.0, 0.0)`) is the top-left corner of the frame. Coordinate `(1, 1)` is the lower-right corner of the frame.
+The origin for box coordinates `(0, 0)` is the top-left corner of the frame. Coordinate `(1, 1)` is the lower-right corner of the frame:
+
+```text
+■───────────────────────────────────────┐
+│(0, 0)                                 │
+│                                       │
+│                                       │
+│                                       │
+│                                       │
+│                  ■(0.5, 0.5)          │
+│                                       │
+│                                       │
+│                                       │
+│                                       │
+│                                       │
+│                                 (1, 1)│
+└───────────────────────────────────────■
+```
 
 #### Movement vector
 
-A track's movement vector is a vector, from the center of the prediction box at the start of the track, to the center of the most recent prediction box in the track. It has two properties, `length` and `direction`.
+A track's movement vector is calculated from the center of the prediction box at the start of the track, to the center of the most recent prediction box in the track. It has two properties, `length` and `direction`.
 
-- `length`: The length of the vector, as a float between 0 and 1.
-- `direction`: The direction of the vector, in degrees, from `[-180, 180)`. 0° is straight to the right of frame; 90º is straight up; -180º is straight left; -90º is straight down.
+##### `length`
 
-> [!NOTE]
-> The `direction` thing is kind of awkward here and there's room for improvement. I hacked this together really quickly 🤷🏻‍♂️
+The length of the vector, as a float between `0` and `≅1.414`.
+
+A length of `1` would cover the entire frame vertically or horizontally; a length of `1.414` would cover the entire frame diagonally, from corner to corner:
 
 ```text
-        ┌───┐    ┌───┐    ┌───┐
-        │ b │    │ b │    │ b │
-        └─▲─┘    └─▲─┘    └─▲─┘
-           ╲       │       ╱
-          135º   90º    45º
-             ╲     │     ╱
-              ╲    │    ╱
-               ╳───┴───╳
- ┌───┐         │       │         ┌───┐
- │ b ◀─-180º───┤   a   │───0º────▶ b │
- └───┘         │       │         └───┘
-               ╳───┬───╳
-              ╱    │    ╲
-             ╱   -90º    ╲
-         -135º     │    -45º
-           ╱       │       ╲
-        ┌─▼─┐    ┌─▼─┐    ┌─▼─┐
-        │ b │    │ b │    │ b │
-        └───┘    └───┘    └───┘
+(0, 0)
+ ■─┬──────────────────────────┐
+ │ └──┐                       │
+ │    └──┐                    │
+ │       └──┐                 │
+ │          └─┐               │
+ │           length           │
+ │           ≅1.414           │
+ │                └─┐         │
+ │                  └─┐       │
+ │                    └─┐     │
+ │                      └─┐   │
+ │                        └─┐ │
+ │                          └▶│(1, 1)
+ └────────────────────────────■
+(0, 0)
+ ■───────┬────────────────────┐
+ │       │                    │
+ │       │                    │
+ │       │                    │
+ │       │      length = 1    │
+ ├───────┼────────────────────▶
+ │       │                    │
+ │       │                    │
+ │       │                    │
+ │       │                    │
+ │   length = 1               │
+ │       │                    │
+ │       │                    │
+ └───────▼────────────────────■(1, 1)
+```
+
+##### `direction`
+
+The direction of the vector, in degrees, from `[-180, 180)`.
+
+`0°` is straight to the right of frame; `90º` is straight up; `-180º` is straight left; `-90º` is straight down:
+
+```text
+             ┌───┐
+             │ b │
+      ┌───┐  └─▲─┘  ┌───┐
+      │ b │    │    │ b │
+      └─▲─┘   90º   └─▲─┘
+         ╲     │     ╱
+      135º╲    │    ╱45º
+           ╳───┴───╳
+┌───┐      │       │      ┌───┐
+│ b ◀──────┤   a   │──0º──▶ b │
+└───┘-180º │       │      └───┘
+           ╳───┬───╳
+     -135º╱    │    ╲-45º
+         ╱     │     ╲
+      ┌─▼─┐  -90º   ┌─▼─┐
+      │ b │    │    │ b │
+      └───┘  ┌─▼─┐  └───┘
+             │ b │
+             └───┘
 ```
 
 #### Example
