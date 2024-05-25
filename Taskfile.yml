@@ -10,6 +10,7 @@ tasks:
     cmds:
       - ruff check
       - prettier --check .
+      - actionlint .github/workflows/*.yml
   test:
     cmds:
       - python -m unittest tests/*.py
