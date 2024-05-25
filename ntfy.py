@@ -12,10 +12,10 @@ import lib_mpex
 
 
 @dataclasses.dataclass(frozen=True)
-class NtfyPhoto:
+class NtfyRecord:
     id: str
-    image: bytes
     expires_at: datetime.datetime
+    jpeg_image: Optional[bytes]
 
 
 @dataclasses.dataclass
@@ -52,9 +52,9 @@ class Notification(ABC):
 class ObjectNotification(Notification):
     t: datetime.datetime
     classification: str
-    image: bytes
     event: str
     id: str
+    jpeg_image: Optional[bytes]
 
     def message(self):
         return f"{self.classification} {self.event}.".capitalize()
@@ -122,7 +122,7 @@ class Notifier(lib_mpex.ChildProcess):
         config: NtfyConfig,
         input_queue: multiprocessing.Queue,
         web_share_ns,
-        photos_dict: Dict[str, NtfyPhoto],
+        records_dict: Dict[str, NtfyRecord],
     ):
         self._config = config
         if self._config.external_base_url.endswith("/"):
@@ -131,7 +131,7 @@ class Notifier(lib_mpex.ChildProcess):
         self._last_notification: Dict[str, datetime.datetime] = {}
         self._web_share_ns = web_share_ns
         self._web_share_ns.mute_until = None
-        self._photos_dict = photos_dict
+        self._records = records_dict
 
     def _prep_ntfy_headers(self, n: Notification) -> Dict[str, str]:
         headers = {}
@@ -144,14 +144,21 @@ class Notifier(lib_mpex.ChildProcess):
             headers["Title"] = title
 
         if isinstance(n, ObjectNotification):
-            photo_url = f"{self._config.external_base_url}/photo/{n.id}.jpg"
-            headers["Click"] = photo_url
-            headers["Attach"] = photo_url
-            headers["Actions"] = (
-                f"view, Photo, {photo_url}, clear=true; "
-                f"{self._ntfy_mute_action_blob(10 * 60, n.id)}; "
-                f"{self._ntfy_mute_action_blob(60 * 60, n.id)}"
-            )
+            if n.jpeg_image:
+                photo_url = f"{self._config.external_base_url}/photo/{n.id}.jpg"
+                headers["Click"] = photo_url
+                headers["Attach"] = photo_url
+                headers["Actions"] = (
+                    f"view, Photo, {photo_url}; "
+                    f"{self._ntfy_mute_action_blob(10 * 60, n.id)}; "
+                    f"{self._ntfy_mute_action_blob(60 * 60, n.id)}"
+                )
+            else:
+                headers["Actions"] = (
+                    f"{self._ntfy_mute_action_blob(10 * 60, n.id)}; "
+                    f"{self._ntfy_mute_action_blob(60 * 60, n.id)}; "
+                    f"{self._ntfy_mute_action_blob(4 * 60 * 60, n.id)}"
+                )
             headers["Priority"] = self._config.priorities.get(
                 n.classification,
                 self._config.default_priority,
@@ -225,9 +232,9 @@ class Notifier(lib_mpex.ChildProcess):
             if isinstance(n, ObjectNotification):
                 if self._suppress(logger, n):
                     continue
-                self._photos_dict[n.id] = NtfyPhoto(
+                self._records[n.id] = NtfyRecord(
                     id=n.id,
-                    image=n.image,
+                    jpeg_image=n.jpeg_image,
                     expires_at=n.t + datetime.timedelta(days=1),
                 )
 
@@ -260,10 +267,10 @@ class Notifier(lib_mpex.ChildProcess):
         # using input_queue notifications as a periodic ticker:
         utcnow = datetime.datetime.now(datetime.timezone.utc)
         keys_to_prune = [
-            k for k, v in self._photos_dict.items() if v.expires_at < utcnow
+            k for k, v in self._records.items() if v.expires_at < utcnow
         ]
         for k in keys_to_prune:
-            del self._photos_dict[k]
+            del self._records[k]
 
 
 def print_notifier(notifications_queue: multiprocessing.Queue):

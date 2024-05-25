@@ -492,15 +492,18 @@ class Tracker(lib_mpex.ChildProcess):
             )
 
             # at this point the track has met all criteria; send notification:
-            ok, jpeg = cv2.imencode(".jpg", track.best_image)
-            if not ok:
-                raise ImageEncodeError("failed to encode JPEG image for track")
+            jpeg: Optional[bytes] = None
+            ok, jpegarr = cv2.imencode(".jpg", track.best_image)
+            if ok:
+                jpeg = jpegarr.tobytes()
+            else:
+                logger.warning("failed to encode frame to JPEG")
             self._output_queue.put_nowait(
                 ObjectNotification(
                     t=track.first_t(),
                     classification=track.classification(),
                     event="arrived in driveway",
-                    image=jpeg.tobytes(),
+                    jpeg_image=jpeg,
                     id=track.id,
                 )
             )

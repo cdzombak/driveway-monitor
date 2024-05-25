@@ -11,7 +11,7 @@ from flask import Flask, jsonify, request, make_response
 from flask_cors import CORS
 
 import lib_mpex
-from ntfy import NtfyPhoto, FeedbackNotification, FeedbackType
+from ntfy import NtfyRecord, FeedbackNotification, FeedbackType
 
 
 @dataclass
@@ -26,12 +26,12 @@ class WebServer(lib_mpex.ChildProcess):
         self,
         config: WebConfig,
         ntfy_share_ns,
-        photos_dict: Dict[str, NtfyPhoto],
+        ntfy_records: Dict[str, NtfyRecord],
         ntfy_queue: multiprocessing.Queue,
     ):
         self._config = config
         self._ntfy_share_ns = ntfy_share_ns
-        self._photos_dict = photos_dict
+        self._ntfy_records = ntfy_records
         self._ntfy_queue = ntfy_queue
 
     def _run(self):
@@ -58,7 +58,7 @@ class WebServer(lib_mpex.ChildProcess):
             key = data.get("key", None)
             if not key:
                 return jsonify({"error": "missing 'key' field"}), 403
-            if key not in self._photos_dict:
+            if key not in self._ntfy_records:
                 return jsonify({"error": "bad key"}), 403
 
             secs = data.get("s", None)
@@ -99,11 +99,13 @@ class WebServer(lib_mpex.ChildProcess):
                 return jsonify({"error": "invalid filename"}), 400
 
             key = fname[:-4]
-            photo_rec: Optional[NtfyPhoto] = self._photos_dict.get(key, None)
+            photo_rec: Optional[NtfyRecord] = self._ntfy_records.get(key, None)
             if photo_rec is None:
-                return jsonify({"error": "photo not found"}), 404
+                return jsonify({"error": "record not found"}), 404
+            if photo_rec.jpeg_image is None:
+                return jsonify({"error": "record has no photo"}), 404
 
-            response = make_response(photo_rec.image)
+            response = make_response(photo_rec.jpeg_image)
             response.headers.set("Content-Type", "image/jpeg")
             return response
 

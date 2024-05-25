@@ -51,7 +51,7 @@ def main():
     exit_queue = multiprocessing.Queue()
     health_ping_queue = multiprocessing.Queue()
     ntfy_web_share_manager = multiprocessing.Manager()
-    ntfy_web_photos_dict = ntfy_web_share_manager.dict()
+    ntfy_web_records_dict = ntfy_web_share_manager.dict()
     ntfy_web_share_ns = ntfy_web_share_manager.Namespace()
 
     model = PredModel(args.video, config.model, tracks_queue, health_ping_queue)
@@ -67,7 +67,7 @@ def main():
             config.notifier,
             notifications_queue,
             ntfy_web_share_ns,
-            ntfy_web_photos_dict,
+            ntfy_web_records_dict,
         )
         notifier_proc = multiprocessing.Process(target=notifier.run, args=(exit_queue,))
     health_pinger = HealthPinger(config.health_pinger, health_ping_queue)
@@ -75,7 +75,7 @@ def main():
         target=health_pinger.run, args=(exit_queue,)
     )
     ws = WebServer(
-        config.web, ntfy_web_share_ns, ntfy_web_photos_dict, notifications_queue
+        config.web, ntfy_web_share_ns, ntfy_web_records_dict, notifications_queue
     )
     ws_proc = multiprocessing.Process(target=ws.run, args=(exit_queue,))
 
