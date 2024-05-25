@@ -106,8 +106,116 @@ jobs:
         run: |
           python -m unittest tests/*.py
 
-  docker:
-    name: Docker Images
+  docker-amd64-cuda:
+    name: Docker Image (amd64-cuda)
+    needs: [meta, lint, test]
+    if: needs.meta.outputs.is_running_version_tag_update != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        if: needs.meta.outputs.is_pull_request != 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
+
+      - name: "Meta"
+        id: docker_meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ needs.meta.outputs.dockerhub_owner }}/${{ needs.meta.outputs.project_name }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+          flavor: |
+            latest=false
+            suffix=-amd64-cuda
+
+      - name: "Build & Push"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile-amd64-cuda
+          platforms: amd64
+          builder: ${{ steps.buildx.outputs.name }}
+          push: ${{ needs.meta.outputs.is_pull_request != 'true' }}
+          tags: ${{ steps.docker_meta.outputs.tags }}
+          labels: ${{ steps.docker_meta.outputs.labels }}
+          build-args: |
+            BIN_VERSION=${{ needs.meta.outputs.bin_version }}
+
+  docker-amd64-cpu:
+    name: Docker Image (amd64-cpu)
+    needs: [meta, lint, test]
+    if: needs.meta.outputs.is_running_version_tag_update != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        if: needs.meta.outputs.is_pull_request != 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
+
+      - name: "Meta"
+        id: docker_meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ needs.meta.outputs.dockerhub_owner }}/${{ needs.meta.outputs.project_name }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+          flavor: |
+            latest=false
+            suffix=-amd64-cpu
+
+      - name: "Build & Push"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile-amd64-cpu
+          platforms: amd64
+          builder: ${{ steps.buildx.outputs.name }}
+          push: ${{ needs.meta.outputs.is_pull_request != 'true' }}
+          tags: ${{ steps.docker_meta.outputs.tags }}
+          labels: ${{ steps.docker_meta.outputs.labels }}
+          build-args: |
+            BIN_VERSION=${{ needs.meta.outputs.bin_version }}
+
+  docker-arm64:
+    name: Docker Image (arm64)
     needs: [meta, lint, test]
     if: needs.meta.outputs.is_running_version_tag_update != 'true'
     runs-on: ubuntu-latest
@@ -128,75 +236,15 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
-          platforms: linux/arm64,linux/amd64,linux/arm64/v8
-
+          platforms: linux/arm64
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@v3
-
       - name: Available platforms
         run: echo ${{ steps.buildx.outputs.platforms }}
 
-      - name: "Meta: amd64-cuda"
-        id: docker_meta_amd64_cuda
-        uses: docker/metadata-action@v5
-        with:
-          images: |
-            ${{ needs.meta.outputs.dockerhub_owner }}/${{ needs.meta.outputs.project_name }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-          flavor: |
-            latest=false
-            suffix=-amd64-cuda
-
-      - name: "Build & Push: amd64-cuda"
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile-amd64-cuda
-          platforms: amd64
-          builder: ${{ steps.buildx.outputs.name }}
-          push: ${{ needs.meta.outputs.is_pull_request != 'true' }}
-          tags: ${{ steps.docker_meta_amd64_cuda.outputs.tags }}
-          labels: ${{ steps.docker_meta_amd64_cuda.outputs.labels }}
-          build-args: |
-            BIN_VERSION=${{ needs.meta.outputs.bin_version }}
-
-      - name: "Meta: amd64-cpu"
-        id: docker_meta_amd64_cpu
-        uses: docker/metadata-action@v5
-        with:
-          images: |
-            ${{ needs.meta.outputs.dockerhub_owner }}/${{ needs.meta.outputs.project_name }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-          flavor: |
-            latest=false
-            suffix=-amd64-cpu
-
-      - name: "Build & Push: amd64-cpu"
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile-amd64-cpu
-          platforms: amd64
-          builder: ${{ steps.buildx.outputs.name }}
-          push: ${{ needs.meta.outputs.is_pull_request != 'true' }}
-          tags: ${{ steps.docker_meta_amd64_cpu.outputs.tags }}
-          labels: ${{ steps.docker_meta_amd64_cpu.outputs.labels }}
-          build-args: |
-            BIN_VERSION=${{ needs.meta.outputs.bin_version }}
-
-      - name: "Meta: arm64"
-        id: docker_meta_arm64
+      - name: "Meta"
+        id: docker_meta
         uses: docker/metadata-action@v5
         with:
           images: |
@@ -211,7 +259,7 @@ jobs:
             latest=false
             suffix=-arm64
 
-      - name: "Build & Push: arm64"
+      - name: "Build & Push"
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -219,24 +267,14 @@ jobs:
           platforms: arm64v8
           builder: ${{ steps.buildx.outputs.name }}
           push: ${{ needs.meta.outputs.is_pull_request != 'true' }}
-          tags: ${{ steps.docker_meta_arm64.outputs.tags }}
-          labels: ${{ steps.docker_meta_arm64.outputs.labels }}
+          tags: ${{ steps.docker_meta.outputs.tags }}
+          labels: ${{ steps.docker_meta.outputs.labels }}
           build-args: |
             BIN_VERSION=${{ needs.meta.outputs.bin_version }}
 
-      - name: Update Docker Hub description
-        if: needs.meta.outputs.is_release == 'true'
-        uses: peter-evans/dockerhub-description@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: ${{ needs.meta.outputs.dockerhub_owner }}/${{ needs.meta.outputs.project_name }}
-          readme-filepath: ./README.md
-          short-description: ${{ github.event.repository.description }}
-
   release:
-    name: GitHub (Pre)Release
-    needs: [meta, lint, test, docker]
+    name: (Pre)Release
+    needs: [meta, lint, test, docker-amd64-cuda, docker-amd64-cpu, docker-arm64]
     if: >-
       needs.meta.outputs.is_release == 'true' ||
       needs.meta.outputs.is_prerelease == 'true'
@@ -249,6 +287,15 @@ jobs:
         with:
           prerelease: ${{ needs.meta.outputs.is_prerelease == 'true' }}
           generate_release_notes: true
+      - name: Update Docker Hub description
+        if: needs.meta.outputs.is_release == 'true'
+        uses: peter-evans/dockerhub-description@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ needs.meta.outputs.dockerhub_owner }}/${{ needs.meta.outputs.project_name }}
+          readme-filepath: ./README.md
+          short-description: ${{ github.event.repository.description }}
 
   tags:
     name: Update Release Tags
@@ -271,7 +318,17 @@ jobs:
     name: Ntfy
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
-    needs: [meta, lint, test, docker, release, tags]
+    needs:
+      [
+        meta,
+        lint,
+        test,
+        docker-amd64-cuda,
+        docker-amd64-cpu,
+        docker-arm64,
+        release,
+        tags,
+      ]
     steps:
       - name: Send success notification
         uses: niniyas/ntfy-action@master
