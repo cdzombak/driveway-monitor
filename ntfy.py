@@ -266,9 +266,7 @@ class Notifier(lib_mpex.ChildProcess):
         # prune old photos from the shared dict,
         # using input_queue notifications as a periodic ticker:
         utcnow = datetime.datetime.now(datetime.timezone.utc)
-        keys_to_prune = [
-            k for k, v in self._records.items() if v.expires_at < utcnow
-        ]
+        keys_to_prune = [k for k, v in self._records.items() if v.expires_at < utcnow]
         for k in keys_to_prune:
             del self._records[k]
 
