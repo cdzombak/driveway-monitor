@@ -155,7 +155,7 @@ The web server provides a few simple endpoints for viewing notification photos, 
 
 ## Configuration (`config.json`)
 
-Quite a number of parameters are set by a JSON configuration file. An example is provided in this repo ([`config.example.json`](config.example.json)) which demonstrates most, but not all, these options.
+Quite a number of parameters are set by a JSON configuration file. An example is provided in this repo ([`config.example.json`](config.example.json)) which demonstrates most, but not all, of these options.
 
 The file is a single JSON object containing the following keys, or a subset thereof. All keys in the JSON file are optional; if a key is not present, the default value will be used. Each key refers to another object configuring a specific part of the `driveway-monitor` program:
 
