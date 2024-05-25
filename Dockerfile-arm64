@@ -6,7 +6,7 @@ ARG BIN_VERSION=<unknown>
 
 RUN apt-get -y update \
     && apt-get install --no-install-recommends -y \
-        curl git zip libpython3-dev python3-opencv libgl1 libglib2.0-0 gnupg g++ libusb-1.0-0 \
+        curl git zip libpython3-dev python3-opencv libgl1 libglib2.0-0 libusb-1.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir /app
