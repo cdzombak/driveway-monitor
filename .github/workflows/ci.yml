@@ -126,7 +126,7 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
-          platforms: linux/arm64,linux/amd64
+          platforms: linux/arm64,linux/amd64,linux/arm64/v8
 
       - name: Set up Docker Buildx
         id: buildx
@@ -190,6 +190,35 @@ jobs:
           push: ${{ needs.meta.outputs.is_pull_request != 'true' }}
           tags: ${{ steps.docker_meta_amd64_cpu.outputs.tags }}
           labels: ${{ steps.docker_meta_amd64_cpu.outputs.labels }}
+          build-args: |
+            BIN_VERSION=${{ needs.meta.outputs.bin_version }}
+
+      - name: "Meta: arm64"
+        id: docker_meta_arm64
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ needs.meta.outputs.dockerhub_owner }}/${{ needs.meta.outputs.project_name }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+          flavor: |
+            latest=false
+            suffix=-arm64
+
+      - name: "Build & Push: arm64"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile-arm64
+          platforms: arm64v8
+          builder: ${{ steps.buildx.outputs.name }}
+          push: ${{ needs.meta.outputs.is_pull_request != 'true' }}
+          tags: ${{ steps.docker_meta_arm64.outputs.tags }}
+          labels: ${{ steps.docker_meta_arm64.outputs.labels }}
           build-args: |
             BIN_VERSION=${{ needs.meta.outputs.bin_version }}
 
