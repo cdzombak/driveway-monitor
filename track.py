@@ -216,7 +216,7 @@ class PredModel(lib_mpex.ChildProcess):
             keep_trying = False
             try:
                 self._run_capture_loop(dev, half, logger, model)
-            except VideoEnded:
+            except (IOError, VideoEnded):
                 if is_stream:
                     # if we're consuming a stream, try to restart it as long as we
                     # don't see 10 failures in 30 seconds:
