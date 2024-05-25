@@ -13,3 +13,14 @@ tasks:
   test:
     cmds:
       - python -m unittest tests/*.py
+  build:
+    deps: [build-amd64-cuda, build-amd64-cpu, build-arm64]
+  build-amd64-cuda:
+    cmds:
+      - docker build . -f Dockerfile-amd64-cuda
+  build-amd64-cpu:
+    cmds:
+      - docker build . -f Dockerfile-amd64-cpu
+  build-arm64:
+    cmds:
+      - docker build . -f Dockerfile-arm64
