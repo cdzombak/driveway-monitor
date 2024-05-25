@@ -262,7 +262,7 @@ jobs:
         with:
           context: .
           file: ./Dockerfile-arm64
-          platforms: arm64v8
+          platforms: arm64
           builder: ${{ steps.buildx.outputs.name }}
           push: ${{ needs.meta.outputs.is_pull_request != 'true' }}
           tags: ${{ steps.docker_meta.outputs.tags }}
