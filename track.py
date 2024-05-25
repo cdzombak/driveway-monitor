@@ -140,7 +140,6 @@ class Track:
         return self.predictions[-2].box.average_with(self.last_box())
 
     def add_prediction(self, p: TrackPrediction):
-        assert p.t > self.last_t()
         self.predictions.append(p)
         if p.is_track:
             self.is_model_track = True
