@@ -2,7 +2,11 @@
 
 **Receive customizable, AI-powered notifications when someone arrives in your driveway.**
 
-`driveway-monitor` accepts an RTSP video stream (or, for testing purposes, a video file) and uses the [YOLOv8 model](https://docs.ultralytics.com/models/yolov8/) to track objects in the video. The model can run on your CPU or on NVIDIA or Apple Silicon GPUs. When an object meets your notification criteria (highly customizable; see "Configuration" below), `driveway-monitor` will notify you via [Ntfy](https://ntfy.sh). The notification includes a snapshot of the object that triggered the notification and provides options to mute notifications for a period of time.
+`driveway-monitor` accepts an RTSP video stream (or, for testing purposes, a video file) and uses the [YOLOv8 model](https://docs.ultralytics.com/models/yolov8/) to track objects in the video. When an object meets your notification criteria (highly customizable; see "Configuration" below), `driveway-monitor` will notify you via [Ntfy](https://ntfy.sh). The notification includes a snapshot of the object that triggered the notification and provides options to mute notifications for a period of time.
+
+The model can run on your CPU or on NVIDIA or Apple Silicon GPUs. It would be possible to use a customized model, and in fact I originally planned to refine my own model based on YOLOv8, but it turned out that the pretrained YOLOv8 model seems to work fine.
+
+[This short video](doc/ntfy-mute-ui.mov) gives an overview of the end result. A notification is received; clicking the "Mute" button results in another notifiation with options to extend the mute time period or unmute the system. Tapping on the notification would open an image of me in my driveway; this isn't shown in the video for privacy reasons.
 
 ## Usage
 
