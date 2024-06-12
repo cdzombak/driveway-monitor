@@ -469,7 +469,7 @@ class Tracker(lib_mpex.ChildProcess):
             )
             if track.length_t() < min_track_len:
                 logger.debug(
-                    f"(trck {track.id}) track length {track.length_t()} sec is less than "
+                    f"(trck {track.id}) track length {track.length_t()} is less than "
                     f"requirement of {min_track_len}; skip further processing"
                 )
                 continue
