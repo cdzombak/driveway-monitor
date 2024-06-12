@@ -33,14 +33,8 @@ class NtfyConfig:
     server: str = "https://ntfy.sh"
     token: Optional[str] = None
     debounce_threshold_s: float = 60.0
-    default_priority: str = "1"
-    priorities: Dict[str, str] = dataclasses.field(
-        default_factory=lambda: {
-            "car": "4",
-            "truck": "4",
-            "person": "4",
-        }
-    )
+    default_priority: str = "3"
+    priorities: Dict[str, str] = dataclasses.field(default_factory=lambda: {})
     req_timeout_s: float = 10.0
     image_method: Optional[str] = None
 
