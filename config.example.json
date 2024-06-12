@@ -10,7 +10,14 @@
     "inactive_track_prune_s": 1
   },
   "notification_criteria": {
-    "classification_allowlist": ["car", "truck", "person"],
+    "classification_allowlist": [
+      "car",
+      "truck",
+      "motorcycle",
+      "bus",
+      "person",
+      "bicycle"
+    ],
     "min_track_length_s": 1.5,
     "min_track_length_s_per_classification": {
       "person": 3
@@ -22,7 +29,7 @@
     "token": "tk_0123456789ABCDEF",
     "topic": "driveway-monitor",
     "priorities": {
-      "car": "3",
+      "car": "4",
       "truck": "3",
       "person": "4"
     }
