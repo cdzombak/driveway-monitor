@@ -14,6 +14,8 @@ from log import LOG_DEFAULT_FMT
 
 IMAGE_ATTACH: Final = "attach"
 IMAGE_CLICK: Final = "click"
+NOTIF_PRIORITY_UNMUTED: Final = "4"
+NOTIF_PRIORITY_MUTED: Final = "1"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -173,7 +175,7 @@ class Notifier(lib_mpex.ChildProcess):
             )
         elif isinstance(n, FeedbackNotification):
             if n.type == FeedbackType.MUTED:
-                headers["Priority"] = "2"
+                headers["Priority"] = NOTIF_PRIORITY_MUTED
                 if n.mute_seconds is not None and n.mute_seconds > 60 * 60:
                     headers["Actions"] = f"{self._ntfy_mute_action_blob(0, n.key)}"
                 else:
@@ -183,7 +185,7 @@ class Notifier(lib_mpex.ChildProcess):
                         f"{self._ntfy_mute_action_blob(12*60*60, n.key)}"
                     )
             elif n.type == FeedbackType.UNMUTED:
-                headers["Priority"] = "4"
+                headers["Priority"] = NOTIF_PRIORITY_UNMUTED
                 headers["Actions"] = (
                     f"{self._ntfy_mute_action_blob(10*60, n.key)}; "
                     f"{self._ntfy_mute_action_blob(60 * 60, n.key)}; "
