@@ -17,6 +17,7 @@ import lib_dmutil
 import lib_mpex
 from health import HealthPing
 from lib_geom import Point, Box, Vector
+from log import LOG_DEFAULT_FMT
 from ntfy import ObjectNotification
 
 
@@ -184,7 +185,7 @@ class PredModel(lib_mpex.ChildProcess):
         ) or self._in_fname.casefold().startswith("rtsps:")
 
         logger: Final = logging.getLogger(__name__ + ":Model")
-        logging.basicConfig(level=self._config.log_level)
+        logging.basicConfig(level=self._config.log_level, format=LOG_DEFAULT_FMT)
         logger.debug(f"healthcheck ping URL: {self._config.healthcheck_ping_url}")
 
         model_name: Final = "yolov8n.pt"
@@ -357,7 +358,7 @@ class Tracker(lib_mpex.ChildProcess):
 
     def _run(self):
         logger = logging.getLogger(__name__ + ":Tracker")
-        logging.basicConfig(level=self._config.log_level)
+        logging.basicConfig(level=self._config.log_level, format=LOG_DEFAULT_FMT)
         logger.info("starting tracker")
 
         cel_env = celpy.Environment()

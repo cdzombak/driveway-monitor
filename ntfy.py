@@ -9,6 +9,7 @@ from typing import Dict, Optional
 import requests
 
 import lib_mpex
+from log import LOG_DEFAULT_FMT
 
 
 @dataclasses.dataclass(frozen=True)
@@ -222,7 +223,7 @@ class Notifier(lib_mpex.ChildProcess):
 
     def _run(self):
         logger = logging.getLogger(__name__)
-        logging.basicConfig(level=self._config.log_level)
+        logging.basicConfig(level=self._config.log_level, format=LOG_DEFAULT_FMT)
         logger.info("starting notifier")
 
         while True:

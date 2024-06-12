@@ -7,6 +7,7 @@ import traceback
 import lib_mpex
 from config import config_from_file
 from health import HealthPinger
+from log import LOG_DEFAULT_FMT
 from ntfy import Notifier, print_notifier
 from track import PredModel, Tracker
 from web import WebServer
@@ -33,7 +34,7 @@ def main():
 
     logger = logging.getLogger("main")
     ll = logging.DEBUG if args.debug else logging.INFO
-    logging.basicConfig(level=ll)
+    logging.basicConfig(level=ll, format=LOG_DEFAULT_FMT)
 
     if sys.version_info < (3, 12):
         logger.error("Python 3.12 or newer is required.")

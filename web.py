@@ -11,6 +11,7 @@ from flask import Flask, jsonify, request, make_response
 from flask_cors import CORS
 
 import lib_mpex
+from log import LOG_DEFAULT_FMT
 from ntfy import NtfyRecord, FeedbackNotification, FeedbackType
 
 
@@ -37,7 +38,7 @@ class WebServer(lib_mpex.ChildProcess):
     def _run(self):
         logging.getLogger("waitress").setLevel(self._config.log_level + 10)
         logger = logging.getLogger(__name__)
-        logging.basicConfig(level=self._config.log_level)
+        logging.basicConfig(level=self._config.log_level, format=LOG_DEFAULT_FMT)
         logger.info("configuring web server")
 
         app = Flask(__name__)
