@@ -32,7 +32,8 @@
       "car": "4",
       "truck": "3",
       "person": "4"
-    }
+    },
+    "image_method": "attach"
   },
   "web": {
     "port": 5550,

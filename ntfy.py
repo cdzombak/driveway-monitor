@@ -4,12 +4,16 @@ import logging
 import multiprocessing
 from abc import ABC
 from enum import Enum
-from typing import Dict, Optional
+from typing import Dict, Optional, Final
 
 import requests
 
 import lib_mpex
 from log import LOG_DEFAULT_FMT
+
+
+IMAGE_ATTACH: Final = "attach"
+IMAGE_CLICK: Final = "click"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -36,6 +40,7 @@ class NtfyConfig:
         }
     )
     req_timeout_s: float = 10.0
+    image_method: Optional[str] = None
 
 
 class Notification(ABC):
@@ -147,19 +152,21 @@ class Notifier(lib_mpex.ChildProcess):
         if isinstance(n, ObjectNotification):
             if n.jpeg_image:
                 photo_url = f"{self._config.external_base_url}/photo/{n.id}.jpg"
-                headers["Click"] = photo_url
-                headers["Attach"] = photo_url
-                headers["Actions"] = (
-                    f"view, Photo, {photo_url}; "
-                    f"{self._ntfy_mute_action_blob(10 * 60, n.id)}; "
-                    f"{self._ntfy_mute_action_blob(60 * 60, n.id)}"
-                )
-            else:
-                headers["Actions"] = (
-                    f"{self._ntfy_mute_action_blob(10 * 60, n.id)}; "
-                    f"{self._ntfy_mute_action_blob(60 * 60, n.id)}; "
-                    f"{self._ntfy_mute_action_blob(4 * 60 * 60, n.id)}"
-                )
+                if (
+                    self._config.image_method is None
+                    or self._config.image_method == IMAGE_CLICK
+                ):
+                    headers["Click"] = photo_url
+                if (
+                    self._config.image_method is None
+                    or self._config.image_method == IMAGE_ATTACH
+                ):
+                    headers["Attach"] = photo_url
+            headers["Actions"] = (
+                f"{self._ntfy_mute_action_blob(10 * 60, n.id)}; "
+                f"{self._ntfy_mute_action_blob(60 * 60, n.id)}; "
+                f"{self._ntfy_mute_action_blob(4 * 60 * 60, n.id)}"
+            )
             headers["Priority"] = self._config.priorities.get(
                 n.classification,
                 self._config.default_priority,

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from health import HealthPingerConfig
-from ntfy import NtfyConfig, Notifier
+from ntfy import NtfyConfig, Notifier, IMAGE_CLICK, IMAGE_ATTACH
 from track import ModelConfig, TrackerConfig
 from web import WebConfig
 
@@ -127,6 +127,16 @@ def config_from_file(
     )
     if not isinstance(cfg.notifier.req_timeout_s, (int, float)):
         raise ConfigValidationError("notifier.req_timeout_s must be a number")
+    cfg.notifier.image_method = ntfy_cfg_dict.get(
+        "image_method", cfg.notifier.image_method
+    )
+    if cfg.notifier.image_method is not None:
+        if not isinstance(cfg.notifier.image_method, str):
+            raise ConfigValidationError("notifier.image_method must be a string")
+        if cfg.notifier.image_method not in {IMAGE_ATTACH, IMAGE_CLICK}:
+            raise ConfigValidationError(
+                "notifier.image_method must be one of " f"{IMAGE_ATTACH}, {IMAGE_CLICK}"
+            )
 
     # tracker:
     tracker_cfg_dict = cfg_dict.get("tracker", {})
