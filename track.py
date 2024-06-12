@@ -462,7 +462,7 @@ class Tracker(lib_mpex.ChildProcess):
                     f"skip further processing"
                 )
                 continue
-            min_track_len: Final = datetime.timedelta(
+            min_track_len = datetime.timedelta(
                 seconds=self._config.notify_min_track_length_s_per_classification.get(
                     track.classification(), self._config.notify_min_track_length_s
                 )
