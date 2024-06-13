@@ -184,7 +184,7 @@ class PredModel(lib_mpex.ChildProcess):
             "rtsp:"
         ) or self._in_fname.casefold().startswith("rtsps:")
 
-        logger: Final = logging.getLogger(__name__ + ":Model")
+        logger: Final = logging.getLogger(__name__ + ".Model")
         logging.basicConfig(level=self._config.log_level, format=LOG_DEFAULT_FMT)
         logger.debug(f"healthcheck ping URL: {self._config.healthcheck_ping_url}")
 
@@ -357,7 +357,7 @@ class Tracker(lib_mpex.ChildProcess):
         self._tracks = list()
 
     def _run(self):
-        logger = logging.getLogger(__name__ + ":Tracker")
+        logger = logging.getLogger(__name__ + ".Tracker")
         logging.basicConfig(level=self._config.log_level, format=LOG_DEFAULT_FMT)
         logger.info("starting tracker")
 

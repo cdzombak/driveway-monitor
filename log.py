@@ -1,3 +1,3 @@
 from typing import Final
 
-LOG_DEFAULT_FMT: Final = "%(asctime)s %(message)s"
+LOG_DEFAULT_FMT: Final = "%(asctime)s [%(levelname)-8s] %(name)s: %(message)s"
