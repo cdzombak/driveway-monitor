@@ -137,6 +137,13 @@ def config_from_file(
             raise ConfigValidationError(
                 "notifier.image_method must be one of " f"{IMAGE_ATTACH}, {IMAGE_CLICK}"
             )
+    cfg.notifier.images_cc_dir = ntfy_cfg_dict.get(
+        "images_cc_dir", cfg.notifier.images_cc_dir
+    )
+    if cfg.notifier.images_cc_dir is not None and not isinstance(
+        cfg.notifier.images_cc_dir, str
+    ):
+        raise ConfigValidationError("notifier.images_cc_dir must be a string")
 
     # tracker:
     tracker_cfg_dict = cfg_dict.get("tracker", {})

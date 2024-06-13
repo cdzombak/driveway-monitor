@@ -2,6 +2,7 @@ import dataclasses
 import datetime
 import logging
 import multiprocessing
+import os.path
 from abc import ABC
 from enum import Enum
 from typing import Dict, Optional, Final
@@ -37,6 +38,7 @@ class NtfyConfig:
     priorities: Dict[str, str] = dataclasses.field(default_factory=lambda: {})
     req_timeout_s: float = 10.0
     image_method: Optional[str] = None
+    images_cc_dir: Optional[str] = None
 
 
 class Notification(ABC):
@@ -234,6 +236,14 @@ class Notifier(lib_mpex.ChildProcess):
             logger.debug("received notification: " + n.message())
 
             if isinstance(n, ObjectNotification):
+                if n.jpeg_image and self._config.images_cc_dir:
+                    try:
+                        dst_fname = f"{n.id}.jpg"
+                        dst_path = os.path.join(self._config.images_cc_dir, dst_fname)
+                        with open(dst_path, "wb") as f:
+                            f.write(n.jpeg_image)
+                    except Exception as e:
+                        logger.error(f"error writing image to disk: {e}")
                 if self._suppress(logger, n):
                     continue
                 self._records[n.id] = NtfyRecord(

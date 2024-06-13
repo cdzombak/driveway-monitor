@@ -178,6 +178,7 @@ The file is a single JSON object containing the following keys, or a subset ther
   - `debounce_threshold_s`: Specifies the number of seconds to wait after a notification before sending another one for the same type of object.
   - `default_priority`: Default priority for notifications. ([See Ntfy docs on Message Priority](https://docs.ntfy.sh/publish/#message-priority).)
   - `image_method`: Method for adding images to notifications. By default, the image URL is added both as a "click" action and as an attachment. Set this to `click` or `attach` to use only one of those methods.
+  - `images_cc_dir`: Directory to which notification images are written. This is optional; if not set, nothing is saved to disk.
   - `priorities`: Map of `classification name` → `priority`. Allows customizing notification priority for specific object types.
   - `req_timeout_s`: Request timeout for sending notifications.
   - `server`: The Ntfy server to send notifications to.
