@@ -13,10 +13,17 @@ import lib_mpex
 from log import LOG_DEFAULT_FMT
 
 
-IMAGE_ATTACH: Final = "attach"
-IMAGE_CLICK: Final = "click"
 NOTIF_PRIORITY_UNMUTED: Final = "4"
 NOTIF_PRIORITY_MUTED: Final = "1"
+
+
+class ImageAttachMethod(Enum):
+    ATTACH = "attach"
+    CLICK = "click"
+
+    @staticmethod
+    def all_values() -> set:
+        return {e.value for e in ImageAttachMethod}
 
 
 @dataclasses.dataclass(frozen=True)
@@ -37,7 +44,7 @@ class NtfyConfig:
     default_priority: str = "3"
     priorities: Dict[str, str] = dataclasses.field(default_factory=lambda: {})
     req_timeout_s: float = 10.0
-    image_method: Optional[str] = None
+    image_method: Optional[ImageAttachMethod] = None
     images_cc_dir: Optional[str] = None
 
 
@@ -152,12 +159,12 @@ class Notifier(lib_mpex.ChildProcess):
                 photo_url = f"{self._config.external_base_url}/photo/{n.id}.jpg"
                 if (
                     self._config.image_method is None
-                    or self._config.image_method == IMAGE_CLICK
+                    or self._config.image_method == ImageAttachMethod.CLICK
                 ):
                     headers["Click"] = photo_url
                 if (
                     self._config.image_method is None
-                    or self._config.image_method == IMAGE_ATTACH
+                    or self._config.image_method == ImageAttachMethod.ATTACH
                 ):
                     headers["Attach"] = photo_url
             headers["Actions"] = (

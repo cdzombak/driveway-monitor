@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from health import HealthPingerConfig
-from ntfy import NtfyConfig, Notifier, IMAGE_CLICK, IMAGE_ATTACH
+from ntfy import NtfyConfig, Notifier, ImageAttachMethod
 from track import ModelConfig, TrackerConfig
 from web import WebConfig
 
@@ -133,9 +133,9 @@ def config_from_file(
     if cfg.notifier.image_method is not None:
         if not isinstance(cfg.notifier.image_method, str):
             raise ConfigValidationError("notifier.image_method must be a string")
-        if cfg.notifier.image_method not in {IMAGE_ATTACH, IMAGE_CLICK}:
+        if cfg.notifier.image_method not in ImageAttachMethod.all_values():
             raise ConfigValidationError(
-                "notifier.image_method must be one of " f"{IMAGE_ATTACH}, {IMAGE_CLICK}"
+                f"notifier.image_method must be one of: {ImageAttachMethod.all_values()}"
             )
     cfg.notifier.images_cc_dir = ntfy_cfg_dict.get(
         "images_cc_dir", cfg.notifier.images_cc_dir
