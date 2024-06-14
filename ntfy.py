@@ -13,10 +13,6 @@ import lib_mpex
 from log import LOG_DEFAULT_FMT
 
 
-NOTIF_PRIORITY_UNMUTED: Final = "4"
-NOTIF_PRIORITY_MUTED: Final = "1"
-
-
 class ImageAttachMethod(Enum):
     ATTACH = "attach"
     CLICK = "click"
@@ -24,6 +20,28 @@ class ImageAttachMethod(Enum):
     @staticmethod
     def all_values() -> set:
         return {e.value for e in ImageAttachMethod}
+
+
+class NtfyPriority(Enum):
+    N_1 = "1"
+    MIN = "min"
+    N_2 = "2"
+    LOW = "low"
+    N_3 = "3"
+    DEFAULT = "default"
+    N_4 = "4"
+    HIGH = "high"
+    N_5 = "5"
+    MAX = "max"
+    URGENT = "urgent"
+
+    @staticmethod
+    def all_values() -> set:
+        return {e.value for e in NtfyPriority}
+
+
+NOTIF_PRIORITY_UNMUTED: Final = NtfyPriority.DEFAULT
+NOTIF_PRIORITY_MUTED: Final = NtfyPriority.MIN
 
 
 @dataclasses.dataclass(frozen=True)
@@ -41,7 +59,7 @@ class NtfyConfig:
     server: str = "https://ntfy.sh"
     token: Optional[str] = None
     debounce_threshold_s: float = 60.0
-    default_priority: str = "3"
+    default_priority: NtfyPriority = NtfyPriority.DEFAULT
     priorities: Dict[str, str] = dataclasses.field(default_factory=lambda: {})
     req_timeout_s: float = 10.0
     image_method: Optional[ImageAttachMethod] = None
@@ -112,22 +130,6 @@ class UnknownNotificationType(Exception):
 
 
 class Notifier(lib_mpex.ChildProcess):
-    @staticmethod
-    def valid_priorities() -> set:
-        return {
-            "1",
-            "2",
-            "3",
-            "4",
-            "5",
-            "max",
-            "urgent",
-            "high",
-            "default",
-            "low",
-            "min",
-        }
-
     def __init__(
         self,
         config: NtfyConfig,

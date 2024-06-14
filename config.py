@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from health import HealthPingerConfig
-from ntfy import NtfyConfig, Notifier, ImageAttachMethod
+from ntfy import NtfyConfig, ImageAttachMethod, NtfyPriority
 from track import ModelConfig, TrackerConfig
 from web import WebConfig
 
@@ -104,7 +104,7 @@ def config_from_file(
     )
     if not isinstance(cfg.notifier.default_priority, str):
         raise ConfigValidationError("notifier.default_priority must be a string")
-    if cfg.notifier.default_priority not in Notifier.valid_priorities():
+    if cfg.notifier.default_priority not in NtfyPriority.all_values():
         raise ConfigValidationError(
             "invalid notifier.default_priority "
             f"'{cfg.notifier.default_priority}' "
@@ -116,7 +116,7 @@ def config_from_file(
             raise ConfigValidationError(
                 "notifier.priorities must be a dict of str -> str"
             )
-        if v not in Notifier.valid_priorities():
+        if v not in NtfyPriority.all_values():
             raise ConfigValidationError(
                 "invalid notifier.priorities value "
                 f"'{v}' for key '{k}' "
