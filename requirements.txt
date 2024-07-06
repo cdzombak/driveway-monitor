@@ -1,7 +1,7 @@
 Babel==2.15.0
 blinker==1.8.2
 cel-python==0.1.5
-certifi==2024.2.2
+certifi==2024.7.4
 charset-normalizer==3.3.2
 click==8.1.7
 contourpy==1.2.1
