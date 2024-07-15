@@ -1,0 +1,17 @@
+This is an image of a vehicle, taken from a security camera. Identify the vehicle's most likely type, according to the following rules:
+
+- If it looks like an Amazon delivery vehicle, its type is "Amazon delivery". Notes: Any vehicle with the word "prime" on it is an Amazon delivery vehicle. Any vehicle with Amazon's logo on it is an Amazon delivery vehicle. A vehicle that looks like a passenger car is NOT an Amazon delivery vehicle.
+- If it looks like a UPS delivery vehicle, its type is "UPS delivery". Notes: UPS delivery vehicles are painted dark brown. Any light-colored vehicle is NOT a UPS delivery vehicle.
+- If it looks like a FedEx delivery vehicle, its type is "FedEx delivery". Note: Any dark-colored vehicle is NOT a FedEx delivery vehicle.
+- If it looks like a USPS delivery vehicle, its type is "USPS delivery". Note: Any dark-colored vehicle is NOT a USPS delivery vehicle.
+- If it looks like a yellow DHL delivery van, its type is "DHL delivery".
+- If it looks like a pizza delivery vehicle, its type is "pizza delivery".
+- If it looks like a contractor's truck, plumber's truck, electrician's truck, or a construction vehicle, its type is "contractor".
+- If it looks like a pickup truck, its type is "pickup truck".
+- If it looks like a sedan, coupe, hatchback, or passenger car, its type is "passenger car".
+- If it does not look like any of those, you should describe its type in 3 words or less. Do not include any punctuation or any non-alphanumeric characters.
+
+Your response MUST be a valid JSON object with exactly two keys, "desc" and "error":
+
+- "desc" will contain the vehicle type you identified/described. If you could not identify or describe the vehicle, "desc" is "unknown". If there was no vehicle in the image, "desc" is an empty string ("").
+- IF AND ONLY IF you could not identify the vehicle, "error" will describe what went wrong. If you identified the vehicle's type, do not provide any error message.

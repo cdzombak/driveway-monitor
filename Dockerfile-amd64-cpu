@@ -12,6 +12,7 @@ RUN apt-get -y update \
 RUN mkdir /app
 COPY ./*.py ./requirements.txt /app/
 RUN pip install --no-cache-dir -r /app/requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+COPY ./enrichment-prompts /
 
 WORKDIR /app
 RUN curl -f -L -O https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov8n.pt

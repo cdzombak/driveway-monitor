@@ -1,0 +1,14 @@
+This is an image from a security camera. The image contains at least one person.
+
+Identify the person's most likely job, according to these rules:
+
+- If the person is wearing a brown uniform, their job is "UPS delivery".
+- If the person is wearing a purple uniform, their job is "FedEx delivery".
+- If the person is wearing a blue uniform or a blue vest, their job is "Amazon delivery".
+- If the person appears to be wearing some other uniform, you should describe a job their uniform is commonly associated with, in 3 words or less. Do not include any punctuation or any non-alphanumeric characters.
+- If the person isn't wearing a uniform commonly associated with a specific job, or you cannot guess their job for any other reason, their job is "unknown".
+
+Your response MUST be a valid JSON object with exactly two keys: "desc" and "error":
+
+- "desc" will contain the job you identified. If you could not identify the person's job, "desc" is "unknown". If there was no person in the image, "desc" is an empty string ("").
+- IF AND ONLY IF you could not plausibly guess the person's job, "error" will describe what went wrong. If you made a guess at the person's job, do not provide any error message.

@@ -258,5 +258,61 @@ def config_from_file(
     # health:
     cfg.health_pinger.req_timeout_s = int(cfg.model.liveness_tick_s - 1.0)
 
+    # enrichment:
+    enrichment_dict = cfg_dict.get("enrichment", {})
+    cfg.notifier.enrichment.enable = enrichment_dict.get(
+        "enable", cfg.notifier.enrichment.enable
+    )
+    if not isinstance(cfg.notifier.enrichment.enable, bool):
+        raise ConfigValidationError("enrichment.enable must be a bool")
+    if cfg.notifier.enrichment.enable:
+        cfg.notifier.enrichment.prompt_files = enrichment_dict.get(
+            "prompt_files", cfg.notifier.enrichment.prompt_files
+        )
+        if not isinstance(cfg.notifier.enrichment.prompt_files, dict):
+            raise ConfigValidationError("enrichment.prompt_files must be a dict")
+        for k, v in cfg.notifier.enrichment.prompt_files.items():
+            if not isinstance(k, str) or not isinstance(v, str):
+                raise ConfigValidationError(
+                    "enrichment.prompt_files must be a dict of str -> str"
+                )
+            try:
+                with open(v) as f:
+                    f.read()
+            except Exception as e:
+                raise ConfigValidationError(
+                    f"enrichment.prompt_files: error reading file '{v}': {e}"
+                )
+        cfg.notifier.enrichment.endpoint = enrichment_dict.get(
+            "endpoint", cfg.notifier.enrichment.endpoint
+        )
+        if not cfg.notifier.enrichment.endpoint or not isinstance(
+            cfg.notifier.enrichment.endpoint, str
+        ):
+            raise ConfigValidationError("enrichment.endpoint must be a string")
+        if not (
+            cfg.notifier.enrichment.endpoint.casefold().startswith("http://")
+            or cfg.notifier.enrichment.endpoint.casefold().startswith("https://")
+        ):
+            # noinspection HttpUrlsUsage
+            raise ConfigValidationError(
+                "enrichment.endpoint must start with http:// or https://"
+            )
+        cfg.notifier.enrichment.model = enrichment_dict.get(
+            "model", cfg.notifier.enrichment.model
+        )
+        if not isinstance(cfg.notifier.enrichment.model, str):
+            raise ConfigValidationError("enrichment.model must be a string")
+        cfg.notifier.enrichment.timeout_s = enrichment_dict.get(
+            "timeout_s", cfg.notifier.enrichment.timeout_s
+        )
+        if not isinstance(cfg.notifier.enrichment.timeout_s, (int, float)):
+            raise ConfigValidationError("enrichment.timeout_s must be a number")
+        cfg.notifier.enrichment.keep_alive = enrichment_dict.get(
+            "keep_alive", cfg.notifier.enrichment.keep_alive
+        )
+        if not isinstance(cfg.notifier.enrichment.keep_alive, str):
+            raise ConfigValidationError("enrichment.keep_alive must be a str")
+
     logger.info("config loaded & validated")
     return cfg

@@ -4,7 +4,9 @@
 
 `driveway-monitor` accepts an RTSP video stream (or, for testing purposes, a video file) and uses the [YOLOv8 model](https://docs.ultralytics.com/models/yolov8/) to track objects in the video. When an object meets your notification criteria (highly customizable; see "Configuration" below), `driveway-monitor` will notify you via [Ntfy](https://ntfy.sh). The notification includes a snapshot of the object that triggered the notification and provides options to mute notifications for a period of time.
 
-The model can run on your CPU or on NVIDIA or Apple Silicon GPUs. It would be possible to use a customized model, and in fact I originally planned to refine my own model based on YOLOv8, but it turned out that the pretrained YOLOv8 model seems to work fine.
+The YOLO computer vision model can run on your CPU or on NVIDIA or Apple Silicon GPUs. It would be possible to use a customized model, and in fact I originally planned to refine my own model based on YOLOv8, but it turned out that the pretrained YOLOv8 model seems to work fine.
+
+Optionally, `driveway-monitor` can also use an instance of [Ollama](https://ollama.com) to provide a detailed description of the object that triggered the notification.
 
 [This short video](doc/ntfy-mute-ui.mov) gives an overview of the end result. A notification is received; clicking the "Mute" button results in another notifiation with options to extend the mute time period or unmute the system. Tapping on the notification would open an image of me in my driveway; this isn't shown in the video for privacy reasons.
 
@@ -52,6 +54,7 @@ services:
     image: cdzombak/driveway-monitor:1-amd64-cuda
     volumes:
       - ./config.json:/config.json:ro
+      - ./enrichment-prompts:/enrichment-prompts:ro
     command:
       [
         "--debug",
@@ -143,6 +146,20 @@ The prediction process consumes a video stream frame-by-frame and feeds each fra
 
 The tracker process aggregates the model's predictions over time, building tracks that represent the movement of individual objects in the video stream. Every time a track is updated with a prediction from a new frame, the tracker evaluates the track against the notification criteria. If the track meets the criteria, a notification is triggered.
 
+### Enrichment
+
+Enrichment is an optional feature that uses an [Ollama](https://ollama.com) model to generate a more detailed description of the object that triggered a notification. If the Ollama model succeeds, the resulting description is included in the notification's message.
+
+To use enrichment, you'll need a working Ollama setup with a multimodal model installed. `driveway-monitor` does not provide this, since it's not necessary for the core feature set, and honestly it provides little additional value.
+
+The best results I've gotten (which still are not stellar) are using [the LLaVA 13b model](https://ollama.com/library/llava). This usually returns a result in under 3 seconds (when running on a 2080 Ti). On a CPU or less powerful GPU, consider `llava:7b`, [`llava-llama3`](https://ollama.com/library/llava-llama3), or just skip enrichment altogether.
+
+You can change the timeout for Ollama enrichment to generate a response by setting `enrichment.timeout_s` in your config. If you want to use enrichment, I highly recommend setting an aggressive timeout to ensure `driveway-monitor`'s responsiveness.
+
+Using enrichment requires providing a _prompt file_ for each YOLO object classification (e.g. `car`, `truck`, `person`) you want to enrich. This allows giving different instructions to your Ollama model for people vs. cars, for example. The `enrichment_prompts` directory provides a useful set of prompt files to get you started.
+
+When running `driveway-monitor` in Docker, keep in mind that your enrichment prompt files must be mounted in the container, and the paths in your config file must reflect the paths inside the container.
+
 ### Notifier
 
 (Configuration key: `notifier`.)
@@ -174,6 +191,13 @@ The file is a single JSON object containing the following keys, or a subset ther
 - `tracker`: Configures the system that builds tracks from the model's detections over time.
   - `inactive_track_prune_s`: Specifies the number of seconds after which an inactive track is pruned. This prevents incorrectly adding a new prediction to an old track.
   - `track_connect_min_overlap`: Minimum overlap percentage of a prediction box with the average of the last 2 boxes in an existing track for the prediction to be added to that track.
+- `enrichment`: Configures the subsystem that enriches notifications via the Ollama API.
+  - `enable`: Whether to enable enrichment via Ollama. Defaults to `false`.
+  - `endpoint`: Complete URL to the Ollama `/generate` endpoint, e.g. `http://localhost:11434/api/generate`.
+  - `keep_alive`: Ask Ollama to keep the model in memory for this long after the request. String, formatted like `60m`. [See the Ollama API docs](https://github.com/ollama/ollama/blob/main/docs/api.md#parameters).
+  - `model`: The name of the Ollama model to use, e.g. `llava` or `llava:13b`.
+  - `prompt_files`: Map of `YOLO classification name` → `path`. Each path is a file containing the prompt to give Ollama along with an image of that YOLO classification.
+  - `timeout_s`: Timeout for the Ollama request, in seconds. This includes connection/network time _and_ the time Ollama takes to generate a response.
 - `notifier`: Configures how notifications are sent.
   - `debounce_threshold_s`: Specifies the number of seconds to wait after a notification before sending another one for the same type of object.
   - `default_priority`: Default priority for notifications. ([See Ntfy docs on Message Priority](https://docs.ntfy.sh/publish/#message-priority).)

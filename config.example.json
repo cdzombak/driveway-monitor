@@ -35,6 +35,18 @@
     },
     "image_method": "attach"
   },
+  "enrichment": {
+    "enable": true,
+    "endpoint": "https://mygpuserver.tailnet-example.ts.net:11434/api/generate",
+    "model": "llava",
+    "keep_alive": "60m",
+    "timeout_s": 5,
+    "prompt_files": {
+      "car": "enrichment_prompts/llava_prompt_car.txt",
+      "truck": "enrichment_prompts/llava_prompt_truck.txt",
+      "person": "enrichment_prompts/llava_prompt_person.txt"
+    }
+  },
   "web": {
     "port": 5550,
     "external_base_url": "https://mymachine.tailnet-example.ts.net:5559"

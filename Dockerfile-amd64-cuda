@@ -17,6 +17,7 @@ RUN mkdir /app
 COPY ./*.py ./requirements.txt /app/
 RUN pip install --no-cache-dir nvidia-tensorrt
 RUN pip install --no-cache-dir -r /app/requirements.txt
+COPY ./enrichment-prompts /
 
 WORKDIR /app
 RUN curl -f -L -O https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov8n.pt
