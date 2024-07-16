@@ -116,9 +116,7 @@ def config_from_file(
     )
     if not isinstance(cfg.notifier.req_timeout_s, (int, float)):
         raise ConfigValidationError("notifier.req_timeout_s must be a number")
-    image_method_str = ntfy_cfg_dict.get(
-        "image_method", cfg.notifier.image_method
-    )
+    image_method_str = ntfy_cfg_dict.get("image_method", cfg.notifier.image_method)
     if image_method_str:
         cfg.notifier.image_method = ImageAttachMethod.from_str(image_method_str)
     cfg.notifier.images_cc_dir = ntfy_cfg_dict.get(
