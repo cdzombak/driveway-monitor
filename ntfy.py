@@ -20,8 +20,11 @@ class ImageAttachMethod(Enum):
     CLICK = "click"
 
     @staticmethod
-    def all_values() -> set:
-        return {e.value for e in ImageAttachMethod}
+    def from_str(method: str) -> "ImageAttachMethod":
+        return {
+            ImageAttachMethod.ATTACH.value.lower(): ImageAttachMethod.ATTACH,
+            ImageAttachMethod.CLICK.value.lower(): ImageAttachMethod.CLICK,
+        }[method.lower()]
 
 
 class NtfyPriority(Enum):
@@ -41,9 +44,25 @@ class NtfyPriority(Enum):
     def all_values() -> set:
         return {e.value for e in NtfyPriority}
 
+    @staticmethod
+    def from_str(pri: str) -> "NtfyPriority":
+        return {
+            NtfyPriority.N_1.value.lower(): NtfyPriority.N_1,
+            NtfyPriority.MIN.value.lower(): NtfyPriority.MIN,
+            NtfyPriority.N_2.value.lower(): NtfyPriority.N_2,
+            NtfyPriority.LOW.value.lower(): NtfyPriority.LOW,
+            NtfyPriority.N_3.value.lower(): NtfyPriority.N_3,
+            NtfyPriority.DEFAULT.value.lower(): NtfyPriority.DEFAULT,
+            NtfyPriority.N_4.value.lower(): NtfyPriority.N_4,
+            NtfyPriority.HIGH.value.lower(): NtfyPriority.HIGH,
+            NtfyPriority.N_5.value.lower(): NtfyPriority.N_5,
+            NtfyPriority.MAX.value.lower(): NtfyPriority.MAX,
+            NtfyPriority.URGENT.value.lower(): NtfyPriority.URGENT,
+        }[pri.lower()]
 
-NOTIF_PRIORITY_UNMUTED: Final = NtfyPriority.DEFAULT
-NOTIF_PRIORITY_MUTED: Final = NtfyPriority.MIN
+
+NOTIF_PRIORITY_UNMUTED: Final = NtfyPriority.DEFAULT.value
+NOTIF_PRIORITY_MUTED: Final = NtfyPriority.MIN.value
 
 
 @dataclasses.dataclass(frozen=True)
@@ -73,7 +92,7 @@ class NtfyConfig:
     token: Optional[str] = None
     debounce_threshold_s: float = 60.0
     default_priority: NtfyPriority = NtfyPriority.DEFAULT
-    priorities: Dict[str, str] = dataclasses.field(default_factory=lambda: {})
+    priorities: Dict[str, NtfyPriority] = dataclasses.field(default_factory=lambda: {})
     req_timeout_s: float = 10.0
     image_method: Optional[ImageAttachMethod] = None
     images_cc_dir: Optional[str] = None
@@ -193,7 +212,7 @@ class Notifier(lib_mpex.ChildProcess):
             headers["Priority"] = self._config.priorities.get(
                 n.classification,
                 self._config.default_priority,
-            )
+            ).value
         elif isinstance(n, FeedbackNotification):
             if n.type == FeedbackType.MUTED:
                 headers["Priority"] = NOTIF_PRIORITY_MUTED

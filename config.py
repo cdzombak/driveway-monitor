@@ -99,44 +99,28 @@ def config_from_file(
     )
     if not isinstance(cfg.notifier.debounce_threshold_s, (int, float)):
         raise ConfigValidationError("notifier.debounce_threshold_s must be a number")
-    cfg.notifier.default_priority = ntfy_cfg_dict.get(
+    default_priority_str = ntfy_cfg_dict.get(
         "default_priority", cfg.notifier.default_priority
     )
-    if not isinstance(cfg.notifier.default_priority, str):
-        raise ConfigValidationError("notifier.default_priority must be a string")
-    if cfg.notifier.default_priority not in NtfyPriority.all_values():
-        raise ConfigValidationError(
-            "invalid notifier.default_priority "
-            f"'{cfg.notifier.default_priority}' "
-            "(see https://docs.ntfy.sh/publish/#message-priority)"
-        )
+    if default_priority_str:
+        cfg.notifier.default_priority = NtfyPriority.from_str(default_priority_str)
     cfg.notifier.priorities = ntfy_cfg_dict.get("priorities", cfg.notifier.priorities)
     for k, v in cfg.notifier.priorities.items():
         if not isinstance(k, str) or not isinstance(v, str):
             raise ConfigValidationError(
                 "notifier.priorities must be a dict of str -> str"
             )
-        if v not in NtfyPriority.all_values():
-            raise ConfigValidationError(
-                "invalid notifier.priorities value "
-                f"'{v}' for key '{k}' "
-                "(see https://docs.ntfy.sh/publish/#message-priority)"
-            )
+        cfg.notifier.priorities[k] = NtfyPriority.from_str(v)
     cfg.notifier.req_timeout_s = ntfy_cfg_dict.get(
         "req_timeout_s", cfg.notifier.req_timeout_s
     )
     if not isinstance(cfg.notifier.req_timeout_s, (int, float)):
         raise ConfigValidationError("notifier.req_timeout_s must be a number")
-    cfg.notifier.image_method = ntfy_cfg_dict.get(
+    image_method_str = ntfy_cfg_dict.get(
         "image_method", cfg.notifier.image_method
     )
-    if cfg.notifier.image_method is not None:
-        if not isinstance(cfg.notifier.image_method, str):
-            raise ConfigValidationError("notifier.image_method must be a string")
-        if cfg.notifier.image_method not in ImageAttachMethod.all_values():
-            raise ConfigValidationError(
-                f"notifier.image_method must be one of: {ImageAttachMethod.all_values()}"
-            )
+    if image_method_str:
+        cfg.notifier.image_method = ImageAttachMethod.from_str(image_method_str)
     cfg.notifier.images_cc_dir = ntfy_cfg_dict.get(
         "images_cc_dir", cfg.notifier.images_cc_dir
     )
