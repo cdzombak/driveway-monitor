@@ -148,6 +148,8 @@ The tracker process aggregates the model's predictions over time, building track
 
 ### Enrichment
 
+(Configuration key: `enrichment`.)
+
 Enrichment is an optional feature that uses an [Ollama](https://ollama.com) model to generate a more detailed description of the object that triggered a notification. If the Ollama model succeeds, the resulting description is included in the notification's message.
 
 To use enrichment, you'll need a working Ollama setup with a multimodal model installed. `driveway-monitor` does not provide this, since it's not necessary for the core feature set, and honestly it provides little additional value.
@@ -156,7 +158,7 @@ The best results I've gotten (which still are not stellar) are using [the LLaVA 
 
 You can change the timeout for Ollama enrichment to generate a response by setting `enrichment.timeout_s` in your config. If you want to use enrichment, I highly recommend setting an aggressive timeout to ensure `driveway-monitor`'s responsiveness.
 
-Using enrichment requires providing a _prompt file_ for each YOLO object classification (e.g. `car`, `truck`, `person`) you want to enrich. This allows giving different instructions to your Ollama model for people vs. cars, for example. The `enrichment_prompts` directory provides a useful set of prompt files to get you started.
+Using enrichment requires providing a _prompt file_ for each YOLO object classification (e.g. `car`, `truck`, `person`) you want to enrich. This allows giving different instructions to your Ollama model for people vs. cars, for example. The `enrichment-prompts` directory provides a useful set of prompt files to get you started.
 
 When running `driveway-monitor` in Docker, keep in mind that your enrichment prompt files must be mounted in the container, and the paths in your config file must reflect the paths inside the container.
 
