@@ -76,7 +76,7 @@ class NtfyRecord:
 class EnrichmentConfig:
     enable: bool = False
     endpoint: str = ""
-    keep_alive: str = "240m"
+    keep_alive: str = "1440m"
     model: str = "llava"
     prompt_files: Dict[str, str] = dataclasses.field(default_factory=lambda: {})
     timeout_s: float = 5.0
@@ -346,10 +346,29 @@ class Notifier(lib_mpex.ChildProcess):
             enriched_class=model_desc,
         )
 
+    def _load_enrichment_model(self, logger):
+        if not self._config.enrichment.enable:
+            return
+        try:
+            requests.post(
+                self._config.enrichment.endpoint,
+                json={
+                    "model": self._config.enrichment.model,
+                    "keep_alive": self._config.enrichment.keep_alive,
+                },
+            )
+            logger.info(f"enrichment model {self._config.enrichment.model} preloaded")
+        except requests.RequestException as e:
+            logger.error(
+                f"enrichment model {self._config.enrichment.model} preload failed: {e}"
+            )
+
     def _run(self):
         logger = logging.getLogger(__name__)
         logging.basicConfig(level=self._config.log_level, format=LOG_DEFAULT_FMT)
         logger.info("starting notifier")
+
+        self._load_enrichment_model(logger)
 
         while True:
             n: Notification = self._input_queue.get()
