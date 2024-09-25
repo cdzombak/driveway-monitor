@@ -300,10 +300,12 @@ class PredModel(lib_mpex.ChildProcess):
                         )
                     last_liveness_tick_at = utcnow
                     frames_since_last_liveness_tick = 0
-                    if self._config.healthcheck_ping_url:
-                        self._health_ping_queue.put_nowait(
-                            HealthPing(self._config.healthcheck_ping_url)
+                    self._health_ping_queue.put_nowait(
+                        HealthPing(
+                            at_t=utcnow,
+                            url=self._config.healthcheck_ping_url,
                         )
+                    )
             else:
                 logger.info(f"video source {self._in_fname} ended")
                 raise VideoEnded

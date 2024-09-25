@@ -4,7 +4,7 @@ import logging
 import multiprocessing
 import os
 from dataclasses import dataclass
-from typing import Optional, Dict
+from typing import Optional, Dict, Final
 
 import waitress
 from flask import Flask, jsonify, request, make_response
@@ -20,6 +20,7 @@ class WebConfig:
     log_level: Optional[int] = logging.INFO
     port: int = 5550
     bind_to: str = "*"
+    liveness_tick_s: float = 30.0
 
 
 class WebServer(lib_mpex.ChildProcess):
@@ -29,11 +30,13 @@ class WebServer(lib_mpex.ChildProcess):
         ntfy_share_ns,
         ntfy_records: Dict[str, NtfyRecord],
         ntfy_queue: multiprocessing.Queue,
+        health_share_ns,
     ):
         self._config = config
         self._ntfy_share_ns = ntfy_share_ns
         self._ntfy_records = ntfy_records
         self._ntfy_queue = ntfy_queue
+        self._health_share_ns = health_share_ns
 
     def _run(self):
         logging.getLogger("waitress").setLevel(self._config.log_level + 10)
@@ -41,12 +44,37 @@ class WebServer(lib_mpex.ChildProcess):
         logging.basicConfig(level=self._config.log_level, format=LOG_DEFAULT_FMT)
         logger.info("configuring web server")
 
+        unhealthy_t: Final = datetime.timedelta(
+            seconds=2 * self._config.liveness_tick_s
+        )
+
         app = Flask(__name__)
         CORS(app)
 
         @app.route("/health", methods=["GET"])
         def health():
             logger.debug(f"{request.remote_addr} {request.method} {request.path}")
+
+            if not self._health_share_ns.last_health_ping_at:
+                return jsonify(
+                    {
+                        "error": "no model health pings yet",
+                        "status": "unhealthy",
+                    }
+                ), 503
+
+            if (
+                datetime.datetime.now(datetime.UTC)
+                - self._health_share_ns.last_health_ping_at
+                >= unhealthy_t
+            ):
+                return jsonify(
+                    {
+                        "error": f"no model health pings in {unhealthy_t}",
+                        "status": "unhealthy",
+                    }
+                ), 503
+
             return jsonify({"status": "ok"})
 
         @app.route("/mute", methods=["POST"])

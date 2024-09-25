@@ -236,6 +236,7 @@ def config_from_file(
             "will not work with web interface or iOS app! consider "
             "using HTTPS for web.external_base_url."
         )
+    cfg.web.liveness_tick_s = cfg.model.liveness_tick_s
 
     # health:
     cfg.health_pinger.req_timeout_s = int(cfg.model.liveness_tick_s - 1.0)
