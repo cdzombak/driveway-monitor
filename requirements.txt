@@ -48,4 +48,4 @@ tzdata==2024.1
 ultralytics==8.2.16
 urllib3==2.2.2
 waitress==3.0.0
-Werkzeug==3.0.3
+Werkzeug==3.0.6
