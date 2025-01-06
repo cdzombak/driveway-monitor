@@ -6,7 +6,7 @@ ARG BIN_VERSION=<unknown>
 
 RUN apt-get -y update \
     && apt-get install --no-install-recommends -y \
-        curl libgl1 libpython3-dev python3-opencv unzxip gcc g++ \
+        curl libgl1 libpython3-dev python3-opencv unzip gcc g++ \
     && rm -rf /var/lib/apt/lists/*
 
 # Avoid DDP error "MKL_THREADING_LAYER=INTEL is incompatible with libgomp.so.1 library" https://github.com/pytorch/pytorch/issues/37377
