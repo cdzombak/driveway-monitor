@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 COPY ./enrichment-prompts /
 
 WORKDIR /app
-RUN curl -f -L -O https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov8n.pt
+RUN curl -f -L -O https://github.com/ultralytics/assets/releases/download/v8.3.0/yolov8n.pt
 ENV DM_DOCKER_ALSO_BIND="*:2856"
 HEALTHCHECK CMD curl -s --max-time 2 --fail http://localhost:2856/health || exit 1
 ENTRYPOINT ["python3", "main.py"]
