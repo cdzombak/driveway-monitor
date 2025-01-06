@@ -1,12 +1,12 @@
 # for amd64/cuda
 # see: https://github.com/ultralytics/ultralytics/blob/main/docker/Dockerfile
 
-FROM amd64/python:3-bookworm
+FROM amd64/python:3.11-bookworm
 ARG BIN_VERSION=<unknown>
 
 RUN apt-get -y update \
     && apt-get install --no-install-recommends -y \
-        curl libgl1 libpython3-dev python3-opencv \
+        curl libgl1 libpython3-dev python3-opencv unzxip gcc g++ \
     && rm -rf /var/lib/apt/lists/*
 
 # Avoid DDP error "MKL_THREADING_LAYER=INTEL is incompatible with libgomp.so.1 library" https://github.com/pytorch/pytorch/issues/37377
@@ -15,8 +15,12 @@ ENV MKL_THREADING_LAYER=GNU
 
 RUN mkdir /app
 COPY ./*.py ./requirements.txt /app/
-RUN pip install --no-cache-dir nvidia-tensorrt
-RUN pip install --no-cache-dir -r /app/requirements.txt
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_BREAK_SYSTEM_PACKAGES=1
+RUN pip install nvidia-tensorrt
+RUN pip install -r /app/requirements.txt
 COPY ./enrichment-prompts /
 
 WORKDIR /app
