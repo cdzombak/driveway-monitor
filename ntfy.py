@@ -404,12 +404,13 @@ class Notifier(lib_mpex.ChildProcess):
                 headers["Authorization"] = "Bearer " + self._config.token
 
             try:
-                requests.post(
+                resp = requests.post(
                     f"{self._config.server}/{self._config.topic}",
                     data=n.message().encode(encoding="utf-8"),
                     headers=headers,
                     timeout=self._config.req_timeout_s,
                 )
+                resp.raise_for_status()
                 logger.info(f"notification '{n.message()}' sent")
             except requests.RequestException as e:
                 logger.error(f"error sending notification: {e}")
