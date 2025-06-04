@@ -1,6 +1,12 @@
 ---
 name: CI
 
+# Required Secrets:
+# - DOCKERHUB_USERNAME: Docker Hub username
+# - DOCKERHUB_TOKEN: Docker Hub access token
+# - GITHUB_TOKEN: Automatically provided by GitHub Actions
+# - NTFY_TOKEN: Bearer token for ntfy.cdzombak.net notifications
+
 "on":
   push:
     branches:
