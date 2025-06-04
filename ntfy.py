@@ -222,12 +222,12 @@ class Notifier(lib_mpex.ChildProcess):
                     headers["Actions"] = (
                         f"{self._ntfy_mute_action_blob(0, n.key)}; "
                         f"{self._ntfy_mute_action_blob(4 * 60 * 60, n.key)}; "
-                        f"{self._ntfy_mute_action_blob(12*60*60, n.key)}"
+                        f"{self._ntfy_mute_action_blob(12 * 60 * 60, n.key)}"
                     )
             elif n.type == FeedbackType.UNMUTED:
                 headers["Priority"] = NOTIF_PRIORITY_UNMUTED
                 headers["Actions"] = (
-                    f"{self._ntfy_mute_action_blob(10*60, n.key)}; "
+                    f"{self._ntfy_mute_action_blob(10 * 60, n.key)}; "
                     f"{self._ntfy_mute_action_blob(60 * 60, n.key)}; "
                     f"{self._ntfy_mute_action_blob(4 * 60 * 60, n.key)}"
                 )
