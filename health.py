@@ -46,6 +46,7 @@ class HealthPinger(lib_mpex.ChildProcess):
                 continue
             logger.debug(f"processing ping request for {p.url}")
             try:
-                requests.get(p.url, timeout=self._config.req_timeout_s)
+                resp = requests.get(p.url, timeout=self._config.req_timeout_s)
+                resp.raise_for_status()
             except requests.RequestException as e:
                 logger.error(f"error pinging {p.url}: {e}")

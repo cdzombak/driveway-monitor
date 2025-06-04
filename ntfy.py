@@ -350,13 +350,14 @@ class Notifier(lib_mpex.ChildProcess):
         if not self._config.enrichment.enable:
             return
         try:
-            requests.post(
+            resp = requests.post(
                 self._config.enrichment.endpoint,
                 json={
                     "model": self._config.enrichment.model,
                     "keep_alive": self._config.enrichment.keep_alive,
                 },
             )
+            resp.raise_for_status()
             logger.info(f"enrichment model {self._config.enrichment.model} preloaded")
         except requests.RequestException as e:
             logger.error(
