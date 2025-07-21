@@ -211,8 +211,8 @@ class PredModel(lib_mpex.ChildProcess):
 
         keep_trying = True
         retryable_failures_at: List[datetime.datetime] = []
-        retryable_failure_threshold_window: Final = datetime.timedelta(seconds=30)
-        retryable_failure_threshold: Final = 10
+        retryable_failure_threshold_window: Final = datetime.timedelta(seconds=60)
+        retryable_failure_threshold: Final = 30
         while keep_trying:
             keep_trying = False
             try:
@@ -231,7 +231,7 @@ class PredModel(lib_mpex.ChildProcess):
                     if len(retryable_failures_at) < retryable_failure_threshold:
                         logger.info("attempting to reopen stream ...")
                         keep_trying = True
-                        time.sleep(2)
+                        time.sleep(1)
                     else:
                         logger.error(
                             f"too many stream failures ({len(retryable_failures_at)} in "
