@@ -1,7 +1,7 @@
 # for amd64/cpu
 # see: https://github.com/ultralytics/ultralytics/blob/main/docker/Dockerfile-cpu
 
-FROM amd64/python:3.11-bookworm
+FROM amd64/python:3.12-bookworm
 ARG BIN_VERSION=<unknown>
 
 RUN apt-get -y update \

@@ -1,7 +1,7 @@
 # for amd64/cuda
 # see: https://github.com/ultralytics/ultralytics/blob/main/docker/Dockerfile
 
-FROM amd64/python:3.11-bookworm
+FROM amd64/python:3.12-bookworm
 ARG BIN_VERSION=<unknown>
 
 RUN apt-get -y update \

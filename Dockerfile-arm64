@@ -1,7 +1,7 @@
 # for arm64/aarch64
 # see: https://github.com/ultralytics/ultralytics/blob/main/docker/Dockerfile-arm64
 
-FROM arm64v8/python:3.11-bookworm
+FROM arm64v8/python:3.12-bookworm
 ARG BIN_VERSION=<unknown>
 
 RUN apt-get -y update \
