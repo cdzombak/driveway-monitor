@@ -92,18 +92,20 @@ jobs:
       - name: Prettier
         run: prettier --check .
       - name: Actionlint
-        uses: raven-actions/actionlint@v1.0.3
+        uses: raven-actions/actionlint@v2
+        with:
+          files: .github/workflows/*.yml
 
   test:
     name: Test
-    runs-on: ubuntu-latest
+    runs-on: namespace-profile-driveway-monitor
     steps:
-      - uses: actions/checkout@v4
+      - uses: namespacelabs/nscloud-checkout-action@v7
       - name: Install Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"
+          cache: ""
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -116,7 +118,7 @@ jobs:
     name: Docker Image (amd64-cuda)
     needs: [meta, lint, test]
     if: needs.meta.outputs.is_running_version_tag_update != 'true'
-    runs-on: ubuntu-latest
+    runs-on: namespace-profile-driveway-monitor
     permissions:
       contents: read
       packages: write
@@ -125,7 +127,7 @@ jobs:
         run: curl -fsSL https://raw.githubusercontent.com/kou/arrow/e49d8ae15583ceff03237571569099a6ad62be32/ci/scripts/util_free_space.sh | bash
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: namespacelabs/nscloud-checkout-action@v7
 
       - name: Login to Docker Hub
         if: needs.meta.outputs.is_pull_request != 'true'
@@ -136,9 +138,7 @@ jobs:
 
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Available platforms
-        run: echo ${{ steps.buildx.outputs.platforms }}
+        uses: namespacelabs/nscloud-setup-buildx-action@v0
 
       - name: "Meta"
         id: docker_meta
@@ -173,13 +173,13 @@ jobs:
     name: Docker Image (amd64-cpu)
     needs: [meta, lint, test]
     if: needs.meta.outputs.is_running_version_tag_update != 'true'
-    runs-on: ubuntu-latest
+    runs-on: namespace-profile-driveway-monitor
     permissions:
       contents: read
       packages: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: namespacelabs/nscloud-checkout-action@v7
 
       - name: Login to Docker Hub
         if: needs.meta.outputs.is_pull_request != 'true'
@@ -190,9 +190,7 @@ jobs:
 
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Available platforms
-        run: echo ${{ steps.buildx.outputs.platforms }}
+        uses: namespacelabs/nscloud-setup-buildx-action@v0
 
       - name: "Meta"
         id: docker_meta
@@ -227,13 +225,13 @@ jobs:
     name: Docker Image (arm64)
     needs: [meta, lint, test]
     if: needs.meta.outputs.is_running_version_tag_update != 'true'
-    runs-on: ubuntu-latest
+    runs-on: namespace-profile-driveway-monitor
     permissions:
       contents: read
       packages: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: namespacelabs/nscloud-checkout-action@v7
 
       - name: Login to Docker Hub
         if: needs.meta.outputs.is_pull_request != 'true'
@@ -242,13 +240,9 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Available platforms
-        run: echo ${{ steps.buildx.outputs.platforms }}
+        uses: namespacelabs/nscloud-setup-buildx-action@v0
 
       - name: "Meta"
         id: docker_meta
