@@ -123,8 +123,8 @@ jobs:
       contents: read
       packages: write
     steps:
-      - name: Free disk space
-        run: curl -fsSL https://raw.githubusercontent.com/kou/arrow/e49d8ae15583ceff03237571569099a6ad62be32/ci/scripts/util_free_space.sh | bash
+      # - name: Free disk space
+      #   run: curl -fsSL https://raw.githubusercontent.com/kou/arrow/e49d8ae15583ceff03237571569099a6ad62be32/ci/scripts/util_free_space.sh | bash
 
       - name: Checkout
         uses: namespacelabs/nscloud-checkout-action@v7
