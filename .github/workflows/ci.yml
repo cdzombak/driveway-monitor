@@ -17,6 +17,10 @@ name: CI
     branches:
       - "main"
 
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
