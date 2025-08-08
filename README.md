@@ -429,6 +429,10 @@ Chris Dzombak.
 - [dzombak.com](https://www.dzombak.com)
 - [GitHub: @cdzombak](https://github.com/cdzombak)
 
+## Special Thanks
+
+Thanks to [Namespace](https://namespace.so) for providing GitHub Actions runners for this project.
+
 ## See Also
 
 - [YOLOv8](https://docs.ultralytics.com/models/yolov8/)
