@@ -257,7 +257,7 @@ def config_from_file(
                 )
             except KeyError:
                 raise ConfigValidationError(
-                    f"enrichment.type must be one of: ollama, openai"
+                    "enrichment.type must be one of: ollama, openai"
                 )
         cfg.notifier.enrichment.prompt_files = enrichment_dict.get(
             "prompt_files", cfg.notifier.enrichment.prompt_files
