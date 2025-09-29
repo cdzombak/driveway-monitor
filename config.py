@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from health import HealthPingerConfig
-from ntfy import NtfyConfig, ImageAttachMethod, NtfyPriority
+from ntfy import NtfyConfig, ImageAttachMethod, NtfyPriority, EnrichmentType
 from track import ModelConfig, TrackerConfig
 from web import WebConfig
 
@@ -249,6 +249,16 @@ def config_from_file(
     if not isinstance(cfg.notifier.enrichment.enable, bool):
         raise ConfigValidationError("enrichment.enable must be a bool")
     if cfg.notifier.enrichment.enable:
+        enrichment_type_str = enrichment_dict.get("type", "ollama")
+        if enrichment_type_str:
+            try:
+                cfg.notifier.enrichment.type = EnrichmentType.from_str(
+                    enrichment_type_str
+                )
+            except KeyError:
+                raise ConfigValidationError(
+                    "enrichment.type must be one of: ollama, openai"
+                )
         cfg.notifier.enrichment.prompt_files = enrichment_dict.get(
             "prompt_files", cfg.notifier.enrichment.prompt_files
         )
@@ -291,11 +301,19 @@ def config_from_file(
         )
         if not isinstance(cfg.notifier.enrichment.timeout_s, (int, float)):
             raise ConfigValidationError("enrichment.timeout_s must be a number")
-        cfg.notifier.enrichment.keep_alive = enrichment_dict.get(
-            "keep_alive", cfg.notifier.enrichment.keep_alive
+        if cfg.notifier.enrichment.type == EnrichmentType.OLLAMA:
+            cfg.notifier.enrichment.keep_alive = enrichment_dict.get(
+                "keep_alive", cfg.notifier.enrichment.keep_alive
+            )
+            if not isinstance(cfg.notifier.enrichment.keep_alive, str):
+                raise ConfigValidationError("enrichment.keep_alive must be a str")
+        cfg.notifier.enrichment.api_key = enrichment_dict.get(
+            "api_key", cfg.notifier.enrichment.api_key
         )
-        if not isinstance(cfg.notifier.enrichment.keep_alive, str):
-            raise ConfigValidationError("enrichment.keep_alive must be a str")
+        if cfg.notifier.enrichment.api_key is not None and not isinstance(
+            cfg.notifier.enrichment.api_key, str
+        ):
+            raise ConfigValidationError("enrichment.api_key must be a string")
 
     logger.info("config loaded & validated")
     return cfg

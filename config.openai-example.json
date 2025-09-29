@@ -1,0 +1,55 @@
+{
+  "model": {
+    "device": "cuda",
+    "confidence": 0.3,
+    "liveness_tick_s": 60,
+    "fps": 15,
+    "healthcheck_ping_url": "https://uptimekuma.example.com:9001/api/push/abcdabcd?status=up&msg=OK&ping="
+  },
+  "tracker": {
+    "inactive_track_prune_s": 1
+  },
+  "notification_criteria": {
+    "classification_allowlist": [
+      "car",
+      "truck",
+      "motorcycle",
+      "bus",
+      "person",
+      "bicycle"
+    ],
+    "min_track_length_s": 1.5,
+    "min_track_length_s_per_classification": {
+      "person": 3
+    },
+    "track_cel": "track.last_box.b.y > 0.4 && track.movement_vector.length > 0.4 && track.movement_vector.direction < 25 && track.movement_vector.direction > -80"
+  },
+  "notifier": {
+    "server": "https://ntfy.example.com",
+    "token": "tk_0123456789ABCDEF",
+    "topic": "driveway-monitor",
+    "priorities": {
+      "car": "4",
+      "truck": "3",
+      "person": "4"
+    },
+    "image_method": "attach"
+  },
+  "enrichment": {
+    "enable": true,
+    "type": "openai",
+    "endpoint": "https://api.openai.com/v1/chat/completions",
+    "model": "gpt-4o",
+    "api_key": "sk-your-api-key-here",
+    "timeout_s": 10,
+    "prompt_files": {
+      "car": "enrichment-prompts/llava_prompt_car.txt",
+      "truck": "enrichment-prompts/llava_prompt_truck.txt",
+      "person": "enrichment-prompts/llava_prompt_person.txt"
+    }
+  },
+  "web": {
+    "port": 5550,
+    "external_base_url": "https://mymachine.tailnet-example.ts.net:5559"
+  }
+}

@@ -150,15 +150,29 @@ The tracker process aggregates the model's predictions over time, building track
 
 (Configuration key: `enrichment`.)
 
-Enrichment is an optional feature that uses an [Ollama](https://ollama.com) model to generate a more detailed description of the object that triggered a notification. If the Ollama model succeeds, the resulting description is included in the notification's message.
+Enrichment is an optional feature that uses a vision AI model to generate a more detailed description of the object that triggered a notification. If the model succeeds, the resulting description is included in the notification's message.
 
-To use enrichment, you'll need a working Ollama setup with a multimodal model installed. `driveway-monitor` does not provide this, since it's not necessary for the core feature set, and honestly it provides little additional value.
+`driveway-monitor` supports two types of enrichment endpoints:
+
+#### Ollama Enrichment
+
+To use Ollama enrichment, you'll need a working [Ollama](https://ollama.com) setup with a multimodal model installed. `driveway-monitor` does not provide this, since it's not necessary for the core feature set, and honestly it provides little additional value.
 
 The best results I've gotten (which still are not stellar) are using [the LLaVA 13b model](https://ollama.com/library/llava). This usually returns a result in under 3 seconds (when running on a 2080 Ti). On a CPU or less powerful GPU, consider `llava:7b`, [`llava-llama3`](https://ollama.com/library/llava-llama3), or just skip enrichment altogether.
 
-You can change the timeout for Ollama enrichment to generate a response by setting `enrichment.timeout_s` in your config. If you want to use enrichment, I highly recommend setting an aggressive timeout to ensure `driveway-monitor`'s responsiveness.
+Set `enrichment.type` to `ollama` (default) and `enrichment.endpoint` to your Ollama API endpoint (e.g., `http://localhost:11434/api/generate`).
 
-Using enrichment requires providing a _prompt file_ for each YOLO object classification (e.g. `car`, `truck`, `person`) you want to enrich. This allows giving different instructions to your Ollama model for people vs. cars, for example. The `enrichment-prompts` directory provides a useful set of prompt files to get you started.
+#### OpenAI-Compatible Enrichment
+
+Alternatively, you can use any OpenAI-compatible vision API endpoint (including OpenAI's GPT-4 Vision, Azure OpenAI, or other compatible providers).
+
+Set `enrichment.type` to `openai`, `enrichment.endpoint` to your API endpoint (e.g., `https://api.openai.com/v1/chat/completions`), `enrichment.model` to your model name (e.g., `gpt-4o` or `gpt-4-vision-preview`), and optionally provide `enrichment.api_key` for authentication.
+
+#### General Configuration
+
+You can change the timeout for enrichment to generate a response by setting `enrichment.timeout_s` in your config. If you want to use enrichment, I highly recommend setting an aggressive timeout to ensure `driveway-monitor`'s responsiveness.
+
+Using enrichment requires providing a _prompt file_ for each YOLO object classification (e.g. `car`, `truck`, `person`) you want to enrich. This allows giving different instructions to your model for people vs. cars, for example. The `enrichment-prompts` directory provides a useful set of prompt files to get you started.
 
 When running `driveway-monitor` in Docker, keep in mind that your enrichment prompt files must be mounted in the container, and the paths in your config file must reflect the paths inside the container.
 
@@ -193,13 +207,15 @@ The file is a single JSON object containing the following keys, or a subset ther
 - `tracker`: Configures the system that builds tracks from the model's detections over time.
   - `inactive_track_prune_s`: Specifies the number of seconds after which an inactive track is pruned. This prevents incorrectly adding a new prediction to an old track.
   - `track_connect_min_overlap`: Minimum overlap percentage of a prediction box with the average of the last 2 boxes in an existing track for the prediction to be added to that track.
-- `enrichment`: Configures the subsystem that enriches notifications via the Ollama API.
-  - `enable`: Whether to enable enrichment via Ollama. Defaults to `false`.
-  - `endpoint`: Complete URL to the Ollama `/generate` endpoint, e.g. `http://localhost:11434/api/generate`.
-  - `keep_alive`: Ask Ollama to keep the model in memory for this long after the request. String, formatted like `60m`. [See the Ollama API docs](https://github.com/ollama/ollama/blob/main/docs/api.md#parameters).
-  - `model`: The name of the Ollama model to use, e.g. `llava` or `llava:13b`.
-  - `prompt_files`: Map of `YOLO classification name` → `path`. Each path is a file containing the prompt to give Ollama along with an image of that YOLO classification.
-  - `timeout_s`: Timeout for the Ollama request, in seconds. This includes connection/network time _and_ the time Ollama takes to generate a response.
+- `enrichment`: Configures the subsystem that enriches notifications via a vision AI API.
+  - `enable`: Whether to enable enrichment. Defaults to `false`.
+  - `type`: Type of enrichment endpoint to use. Either `ollama` (default) or `openai`.
+  - `endpoint`: Complete URL to the API endpoint. For Ollama: e.g. `http://localhost:11434/api/generate`. For OpenAI-compatible: e.g. `https://api.openai.com/v1/chat/completions`.
+  - `model`: The name of the model to use. For Ollama: e.g. `llava` or `llava:13b`. For OpenAI-compatible: e.g. `gpt-4o` or `gpt-4-vision-preview`.
+  - `prompt_files`: Map of `YOLO classification name` → `path`. Each path is a file containing the prompt to give the model along with an image of that YOLO classification.
+  - `timeout_s`: Timeout for the API request, in seconds. This includes connection/network time _and_ the time the model takes to generate a response.
+  - `api_key`: (Optional) API key for authentication. Used for OpenAI-compatible endpoints.
+  - `keep_alive`: (Ollama only) Ask Ollama to keep the model in memory for this long after the request. String, formatted like `60m`. [See the Ollama API docs](https://github.com/ollama/ollama/blob/main/docs/api.md#parameters).
 - `notifier`: Configures how notifications are sent.
   - `debounce_threshold_s`: Specifies the number of seconds to wait after a notification before sending another one for the same type of object.
   - `default_priority`: Default priority for notifications. ([See Ntfy docs on Message Priority](https://docs.ntfy.sh/publish/#message-priority).)
