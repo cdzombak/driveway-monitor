@@ -72,14 +72,28 @@ class NtfyRecord:
     jpeg_image: Optional[bytes]
 
 
+class EnrichmentType(Enum):
+    OLLAMA = "ollama"
+    OPENAI = "openai"
+
+    @staticmethod
+    def from_str(etype: str) -> "EnrichmentType":
+        return {
+            EnrichmentType.OLLAMA.value.lower(): EnrichmentType.OLLAMA,
+            EnrichmentType.OPENAI.value.lower(): EnrichmentType.OPENAI,
+        }[etype.lower()]
+
+
 @dataclasses.dataclass
 class EnrichmentConfig:
     enable: bool = False
+    type: EnrichmentType = EnrichmentType.OLLAMA
     endpoint: str = ""
     keep_alive: str = "1440m"
     model: str = "llava"
     prompt_files: Dict[str, str] = dataclasses.field(default_factory=lambda: {})
     timeout_s: float = 5.0
+    api_key: Optional[str] = None
 
 
 @dataclasses.dataclass
@@ -276,6 +290,15 @@ class Notifier(lib_mpex.ChildProcess):
         if not n.jpeg_image:
             return n
 
+        if self._config.enrichment.type == EnrichmentType.OLLAMA:
+            return self._enrich_ollama(logger, n)
+        elif self._config.enrichment.type == EnrichmentType.OPENAI:
+            return self._enrich_openai(logger, n)
+        else:
+            logger.error(f"unknown enrichment type: {self._config.enrichment.type}")
+            return n
+
+    def _enrich_ollama(self, logger, n: ObjectNotification) -> ObjectNotification:
         prompt_file = self._config.enrichment.prompt_files.get(n.classification)
         if not prompt_file:
             return n
@@ -346,8 +369,102 @@ class Notifier(lib_mpex.ChildProcess):
             enriched_class=model_desc,
         )
 
+    def _enrich_openai(self, logger, n: ObjectNotification) -> ObjectNotification:
+        prompt_file = self._config.enrichment.prompt_files.get(n.classification)
+        if not prompt_file:
+            return n
+        try:
+            with open(prompt_file, "r") as f:
+                enrichment_prompt = f.read()
+        except Exception as e:
+            logger.error(f"error reading enrichment prompt file '{prompt_file}': {e}")
+            return n
+        if not enrichment_prompt:
+            return n
+
+        base64_image = base64.b64encode(n.jpeg_image).decode("ascii")
+
+        headers = {"Content-Type": "application/json"}
+        if self._config.enrichment.api_key:
+            headers["Authorization"] = f"Bearer {self._config.enrichment.api_key}"
+
+        try:
+            resp = requests.post(
+                self._config.enrichment.endpoint,
+                headers=headers,
+                json={
+                    "model": self._config.enrichment.model,
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": enrichment_prompt},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:image/jpeg;base64,{base64_image}"
+                                    },
+                                },
+                            ],
+                        }
+                    ],
+                    "max_tokens": 300,
+                },
+                timeout=self._config.enrichment.timeout_s,
+            )
+            resp.raise_for_status()
+            parsed = resp.json()
+        except requests.Timeout:
+            logger.error("enrichment request timed out")
+            return n
+        except requests.RequestException as e:
+            logger.error(f"enrichment failed: {e}")
+            return n
+
+        try:
+            model_resp_str = parsed["choices"][0]["message"]["content"]
+        except (KeyError, IndexError) as e:
+            logger.error(f"enrichment response missing expected fields: {e}")
+            return n
+
+        if not model_resp_str:
+            logger.error("enrichment response is empty")
+            return n
+
+        try:
+            model_resp_parsed = json.loads(model_resp_str)
+        except json.JSONDecodeError as e:
+            logger.info(f"enrichment model did not produce valid JSON: {e}")
+            logger.info(f"response: {model_resp_str}")
+            return n
+
+        if "type" not in model_resp_parsed and "error" not in model_resp_parsed:
+            logger.info("enrichment model did not produce expected JSON keys")
+            return n
+
+        model_desc = model_resp_parsed.get("desc", "unknown")
+        if model_desc == "unknown" or model_desc == "":
+            model_err = model_resp_parsed.get("error")
+            if not model_err:
+                model_err = "(no error returned)"
+            logger.info(
+                f"enrichment model could not produce a useful description: {model_err}"
+            )
+            return n
+
+        return ObjectNotification(
+            t=n.t,
+            classification=n.classification,
+            event=n.event,
+            id=n.id,
+            jpeg_image=n.jpeg_image,
+            enriched_class=model_desc,
+        )
+
     def _load_enrichment_model(self, logger):
         if not self._config.enrichment.enable:
+            return
+        if self._config.enrichment.type != EnrichmentType.OLLAMA:
             return
         try:
             resp = requests.post(
