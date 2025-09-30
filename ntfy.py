@@ -327,12 +327,17 @@ class Notifier(lib_mpex.ChildProcess):
                 timeout=self._config.enrichment.timeout_s,
             )
             resp.raise_for_status()
-            parsed = resp.json()
         except requests.Timeout:
             logger.error("enrichment request timed out")
             return n
         except requests.RequestException as e:
             logger.error(f"enrichment failed: {e}")
+            return n
+
+        try:
+            parsed = resp.json()
+        except json.JSONDecodeError as e:
+            logger.error(f"enrichment response is not valid JSON: {e}")
             return n
 
         model_resp_str = parsed.get("response")
@@ -414,12 +419,17 @@ class Notifier(lib_mpex.ChildProcess):
                 timeout=self._config.enrichment.timeout_s,
             )
             resp.raise_for_status()
-            parsed = resp.json()
         except requests.Timeout:
             logger.error("enrichment request timed out")
             return n
         except requests.RequestException as e:
             logger.error(f"enrichment failed: {e}")
+            return n
+
+        try:
+            parsed = resp.json()
+        except json.JSONDecodeError as e:
+            logger.error(f"enrichment response is not valid JSON: {e}")
             return n
 
         try:
