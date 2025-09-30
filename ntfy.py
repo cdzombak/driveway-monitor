@@ -326,6 +326,7 @@ class Notifier(lib_mpex.ChildProcess):
                 },
                 timeout=self._config.enrichment.timeout_s,
             )
+            resp.raise_for_status()
             parsed = resp.json()
         except requests.Timeout:
             logger.error("enrichment request timed out")
