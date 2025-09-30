@@ -511,6 +511,7 @@ class Notifier(lib_mpex.ChildProcess):
                         with open(dst_path, "wb") as f:
                             f.write(n.jpeg_image)
                     except Exception as e:
+                        # Log error but continue - image write failure shouldn't block notification
                         logger.error(f"error writing image to disk: {e}")
                 if self._suppress(logger, n):
                     continue
