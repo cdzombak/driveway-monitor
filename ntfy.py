@@ -266,6 +266,17 @@ class Notifier(lib_mpex.ChildProcess):
             f"headers.content-type=application/json, clear=true"
         )
 
+    def _strip_markdown_fences(self, json_str: str) -> str:
+        """Strip Markdown code fences from JSON string if present."""
+        json_str = json_str.strip()
+        if json_str.startswith("```json"):
+            json_str = json_str[7:]  # Remove ```json
+        elif json_str.startswith("```"):
+            json_str = json_str[3:]  # Remove ```
+        if json_str.endswith("```"):
+            json_str = json_str[:-3]  # Remove trailing ```
+        return json_str.strip()
+
     def _suppress(self, logger, n: ObjectNotification) -> bool:
         mute_until: Optional[datetime.datetime] = self._web_share_ns.mute_until
         if mute_until and n.t < mute_until:
@@ -344,6 +355,8 @@ class Notifier(lib_mpex.ChildProcess):
         if not model_resp_str:
             logger.error("enrichment response is missing")
             return n
+
+        model_resp_str = self._strip_markdown_fences(model_resp_str.strip())
 
         try:
             model_resp_parsed = json.loads(model_resp_str)
@@ -441,6 +454,8 @@ class Notifier(lib_mpex.ChildProcess):
         if not model_resp_str:
             logger.error("enrichment response is empty")
             return n
+
+        model_resp_str = self._strip_markdown_fences(model_resp_str.strip())
 
         try:
             model_resp_parsed = json.loads(model_resp_str)
