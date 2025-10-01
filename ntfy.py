@@ -5,6 +5,7 @@ import json
 import logging
 import multiprocessing
 import os.path
+import time
 from abc import ABC
 from enum import Enum
 from typing import Dict, Optional, Final
@@ -323,6 +324,7 @@ class Notifier(lib_mpex.ChildProcess):
             return n
 
         try:
+            start_time = time.time()
             resp = requests.post(
                 self._config.enrichment.endpoint,
                 json={
@@ -338,6 +340,8 @@ class Notifier(lib_mpex.ChildProcess):
                 timeout=self._config.enrichment.timeout_s,
             )
             resp.raise_for_status()
+            elapsed_time = time.time() - start_time
+            logger.info(f"enrichment request completed in {elapsed_time:.2f}s")
         except requests.Timeout:
             logger.error("enrichment request timed out")
             return n
@@ -408,6 +412,7 @@ class Notifier(lib_mpex.ChildProcess):
             headers["Authorization"] = f"Bearer {self._config.enrichment.api_key}"
 
         try:
+            start_time = time.time()
             resp = requests.post(
                 self._config.enrichment.endpoint,
                 headers=headers,
@@ -432,6 +437,8 @@ class Notifier(lib_mpex.ChildProcess):
                 timeout=self._config.enrichment.timeout_s,
             )
             resp.raise_for_status()
+            elapsed_time = time.time() - start_time
+            logger.info(f"enrichment request completed in {elapsed_time:.2f}s")
         except requests.Timeout:
             logger.error("enrichment request timed out")
             return n
