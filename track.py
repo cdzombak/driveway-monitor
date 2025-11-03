@@ -164,6 +164,9 @@ class ModelConfig:
     max_det: int = 5
     liveness_tick_s: float = 30.0
     healthcheck_ping_url: Optional[str] = None
+    video_read_timeout_ms: int = (
+        15000  # Timeout for VideoCapture read operations (milliseconds)
+    )
 
 
 class PredModel(lib_mpex.ChildProcess):
@@ -255,6 +258,12 @@ class PredModel(lib_mpex.ChildProcess):
         frames_since_last_liveness_tick = 0
         logger.info(f"opening video source {self._in_fname}")
         cap = cv2.VideoCapture(self._in_fname)
+        # Set read timeout to prevent indefinite blocking during RTSP connection issues
+        cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, self._config.video_read_timeout_ms)
+        cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, self._config.video_read_timeout_ms)
+        logger.debug(
+            f"VideoCapture read timeout set to {self._config.video_read_timeout_ms}ms"
+        )
         if not cap.isOpened():
             raise IOError(f"failed to open video source {self._in_fname}")
         while cap.isOpened():

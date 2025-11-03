@@ -82,6 +82,13 @@ def config_from_file(
         cfg.model.healthcheck_ping_url, str
     ):
         raise ConfigValidationError("model.healthcheck_ping_url must be a string")
+    cfg.model.video_read_timeout_ms = model_cfg_dict.get(
+        "video_read_timeout_ms", cfg.model.video_read_timeout_ms
+    )
+    if not isinstance(cfg.model.video_read_timeout_ms, int):
+        raise ConfigValidationError("model.video_read_timeout_ms must be an int")
+    if cfg.model.video_read_timeout_ms < 1000:
+        raise ConfigValidationError("model.video_read_timeout_ms must be >= 1000")
 
     # notifier:
     ntfy_cfg_dict = cfg_dict.get("notifier", {})
