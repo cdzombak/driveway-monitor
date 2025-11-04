@@ -140,6 +140,8 @@ This section briefly explains the different components of the program. In partic
 
 The prediction process consumes a video stream frame-by-frame and feeds each frame to the YOLOv8 model. The model produces predictions of objects in the frame, including their classifications (e.g. "car") and rectangular bounding boxes. These predictions are passed to the tracker process.
 
+For RTSP inputs, the capture loop now keeps retrying indefinitely when the camera temporarily drops offline. Reconnection uses an exponential backoff that resets once frames flow again; tune it with the `model.stream_reconnect_*` settings if you need faster or slower retries.
+
 ### Tracker
 
 (Configuration keys: `tracker` and `notification_criteria`.)
@@ -204,6 +206,9 @@ The file is a single JSON object containing the following keys, or a subset ther
   - `iou`: Intersection Over Union (IoU) threshold for Non-Maximum Suppression (NMS). Lower values result in fewer detections by eliminating overlapping boxes, useful for reducing duplicates.
   - `liveness_tick_s`: Specifies the interval to log a liveness message and ping `healthcheck_ping_url` (if that field is set).
   - `max_det`: Maximum number of detections per frame.
+  - `video_read_timeout_ms`: Timeout (milliseconds) applied to the underlying OpenCV reader so that RTSP hiccups do not block the pipeline forever.
+  - `stream_reconnect_initial_backoff_s`: Initial delay before attempting to reopen a failed RTSP stream. Each consecutive failure without successfully processing frames doubles this delay.
+  - `stream_reconnect_max_backoff_s`: Upper bound for the reconnection backoff delay. Useful when a camera is offline for an extended period but the process should keep retrying.
 - `tracker`: Configures the system that builds tracks from the model's detections over time.
   - `inactive_track_prune_s`: Specifies the number of seconds after which an inactive track is pruned. This prevents incorrectly adding a new prediction to an old track.
   - `track_connect_min_overlap`: Minimum overlap percentage of a prediction box with the average of the last 2 boxes in an existing track for the prediction to be added to that track.

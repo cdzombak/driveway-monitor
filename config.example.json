@@ -5,7 +5,9 @@
     "liveness_tick_s": 60,
     "fps": 15,
     "healthcheck_ping_url": "https://uptimekuma.example.com:9001/api/push/abcdabcd?status=up&msg=OK&ping=",
-    "video_read_timeout_ms": 15000
+    "video_read_timeout_ms": 15000,
+    "stream_reconnect_initial_backoff_s": 1,
+    "stream_reconnect_max_backoff_s": 60
   },
   "tracker": {
     "inactive_track_prune_s": 1
