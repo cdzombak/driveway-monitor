@@ -249,9 +249,7 @@ class PredModel(lib_mpex.ChildProcess):
                     reconnect_delay_max_s,
                 )
 
-            logger.info(
-                f"attempting to reopen stream in {reconnect_delay_s:.1f}s ..."
-            )
+            logger.info(f"attempting to reopen stream in {reconnect_delay_s:.1f}s ...")
             time.sleep(reconnect_delay_s)
             # loop continues until the process is terminated by the parent
 
