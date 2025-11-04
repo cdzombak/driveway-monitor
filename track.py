@@ -167,6 +167,8 @@ class ModelConfig:
     video_read_timeout_ms: int = (
         15000  # Timeout for VideoCapture read operations (milliseconds)
     )
+    stream_reconnect_initial_backoff_s: float = 1.0
+    stream_reconnect_max_backoff_s: float = 30.0
 
 
 class PredModel(lib_mpex.ChildProcess):
@@ -181,6 +183,7 @@ class PredModel(lib_mpex.ChildProcess):
         self._config = config
         self._output_queue = output_queue
         self._health_ping_queue = health_ping_queue
+        self._frames_seen_last_run = 0
 
     def _run(self):
         is_stream: Final = self._in_fname.casefold().startswith(
@@ -212,40 +215,45 @@ class PredModel(lib_mpex.ChildProcess):
             half = False
         logger.info(f"{model_name} will use device '{dev}' (half={half})")
 
-        keep_trying = True
-        retryable_failures_at: List[datetime.datetime] = []
-        retryable_failure_threshold_window: Final = datetime.timedelta(seconds=60)
-        retryable_failure_threshold: Final = 30
-        while keep_trying:
-            keep_trying = False
+        reconnect_delay_s = self._config.stream_reconnect_initial_backoff_s
+        reconnect_delay_s = max(reconnect_delay_s, 0.1)
+        reconnect_delay_max_s = max(
+            reconnect_delay_s, self._config.stream_reconnect_max_backoff_s
+        )
+        while True:
             try:
                 self._run_capture_loop(dev, half, logger, model)
-            except (IOError, VideoEnded):
-                if is_stream:
-                    # if we're consuming a stream, try to restart it as long as we
-                    # don't see 10 failures in 30 seconds:
-                    utcnow = datetime.datetime.now(datetime.UTC)
-                    retryable_failures_at.append(utcnow)
-                    retryable_failures_at = [
-                        t
-                        for t in retryable_failures_at
-                        if utcnow - t < retryable_failure_threshold_window
-                    ]
-                    if len(retryable_failures_at) < retryable_failure_threshold:
-                        logger.info("attempting to reopen stream ...")
-                        keep_trying = True
-                        time.sleep(1)
-                    else:
-                        logger.error(
-                            f"too many stream failures ({len(retryable_failures_at)} in "
-                            f"{retryable_failure_threshold_window.seconds} sec)"
-                        )
-                        raise
-                else:
-                    # video ended, but it's not a stream, so we're done successfully:
-                    pass
-            # any other exceptions (e.g. IOError opening a video file)
-            # will continue propagating and be handled by the parent process
+            except VideoEnded:
+                if not is_stream:
+                    break
+                logger.warning(
+                    "video stream ended or stalled; will try to reopen the source"
+                )
+            except (IOError, cv2.error) as exc:
+                if not is_stream:
+                    raise
+                logger.warning(f"video stream error '{exc}'; will try to reopen")
+            else:
+                # non-stream capture completed successfully
+                if not is_stream:
+                    break
+
+            if not is_stream:
+                break
+
+            if self._frames_seen_last_run > 0:
+                reconnect_delay_s = self._config.stream_reconnect_initial_backoff_s
+            else:
+                reconnect_delay_s = min(
+                    reconnect_delay_s * 2,
+                    reconnect_delay_max_s,
+                )
+
+            logger.info(
+                f"attempting to reopen stream in {reconnect_delay_s:.1f}s ..."
+            )
+            time.sleep(reconnect_delay_s)
+            # loop continues until the process is terminated by the parent
 
         # at this point we're done, with no error; delay exit if requested:
         self._delay_exit_if_requested(logger)
@@ -257,67 +265,75 @@ class PredModel(lib_mpex.ChildProcess):
         last_liveness_tick_at: Optional[datetime.datetime] = None
         frames_since_last_liveness_tick = 0
         logger.info(f"opening video source {self._in_fname}")
+        self._frames_seen_last_run = 0
         cap = cv2.VideoCapture(self._in_fname)
-        # Set read timeout to prevent indefinite blocking during RTSP connection issues
-        cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, self._config.video_read_timeout_ms)
-        cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, self._config.video_read_timeout_ms)
-        logger.debug(
-            f"VideoCapture read timeout set to {self._config.video_read_timeout_ms}ms"
-        )
-        if not cap.isOpened():
-            raise IOError(f"failed to open video source {self._in_fname}")
-        while cap.isOpened():
-            success, frame = cap.read()
-            if success:
-                utcnow = datetime.datetime.now(datetime.UTC)
-                frames_since_last_liveness_tick += 1
-                results = model.track(
-                    frame,
-                    conf=self._config.confidence,
-                    iou=self._config.iou,
-                    max_det=self._config.max_det,
-                    persist=True,
-                    device=dev,
-                    half=half,
-                    verbose=False,
-                )
-                for b in results[0].boxes:
-                    if b.id is not None:
-                        xyxyn = b.xyxyn.numpy()
-                        p = TrackPrediction(
-                            t=utcnow,
-                            model_id=int(b.id.item()),
-                            classification=results[0].names[int(b.cls)],
-                            is_track=b.is_track,
-                            box=Box(
-                                a=Point(x=xyxyn.item(0), y=xyxyn.item(1)),
-                                b=Point(x=xyxyn.item(2), y=xyxyn.item(3)),
-                            ),
-                            image=frame,
-                        )
-                        self._output_queue.put_nowait(p)
-
-                if (
-                    last_liveness_tick_at is None
-                    or (utcnow - last_liveness_tick_at) > liveness_tick_t
-                ):
-                    if last_liveness_tick_at is not None:
-                        logger.debug(
-                            f"liveness tick at {utcnow}; processed "
-                            f"{frames_since_last_liveness_tick} frames since last tick "
-                            f"({frames_since_last_liveness_tick / (utcnow - last_liveness_tick_at).total_seconds()} fps)"
-                        )
-                    last_liveness_tick_at = utcnow
-                    frames_since_last_liveness_tick = 0
-                    self._health_ping_queue.put_nowait(
-                        HealthPing(
-                            at_t=utcnow,
-                            url=self._config.healthcheck_ping_url,
-                        )
+        try:
+            # Set read timeout to prevent indefinite blocking during RTSP connection issues
+            cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, self._config.video_read_timeout_ms)
+            cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, self._config.video_read_timeout_ms)
+            logger.debug(
+                f"VideoCapture timeouts set to {self._config.video_read_timeout_ms}ms"
+            )
+            if not cap.isOpened():
+                raise IOError(f"failed to open video source {self._in_fname}")
+            while cap.isOpened():
+                success, frame = cap.read()
+                if success and frame is not None:
+                    self._frames_seen_last_run += 1
+                    utcnow = datetime.datetime.now(datetime.UTC)
+                    frames_since_last_liveness_tick += 1
+                    results = model.track(
+                        frame,
+                        conf=self._config.confidence,
+                        iou=self._config.iou,
+                        max_det=self._config.max_det,
+                        persist=True,
+                        device=dev,
+                        half=half,
+                        verbose=False,
                     )
-            else:
-                logger.info(f"video source {self._in_fname} ended")
-                raise VideoEnded
+                    for b in results[0].boxes:
+                        if b.id is not None:
+                            xyxyn = b.xyxyn.numpy()
+                            p = TrackPrediction(
+                                t=utcnow,
+                                model_id=int(b.id.item()),
+                                classification=results[0].names[int(b.cls)],
+                                is_track=b.is_track,
+                                box=Box(
+                                    a=Point(x=xyxyn.item(0), y=xyxyn.item(1)),
+                                    b=Point(x=xyxyn.item(2), y=xyxyn.item(3)),
+                                ),
+                                image=frame,
+                            )
+                            self._output_queue.put_nowait(p)
+
+                    if (
+                        last_liveness_tick_at is None
+                        or (utcnow - last_liveness_tick_at) > liveness_tick_t
+                    ):
+                        if last_liveness_tick_at is not None:
+                            logger.debug(
+                                f"liveness tick at {utcnow}; processed "
+                                f"{frames_since_last_liveness_tick} frames since last tick "
+                                f"({frames_since_last_liveness_tick / (utcnow - last_liveness_tick_at).total_seconds()} fps)"
+                            )
+                        last_liveness_tick_at = utcnow
+                        frames_since_last_liveness_tick = 0
+                        self._health_ping_queue.put_nowait(
+                            HealthPing(
+                                at_t=utcnow,
+                                url=self._config.healthcheck_ping_url,
+                            )
+                        )
+                else:
+                    logger.warning(
+                        f"read from video source {self._in_fname} failed; reconnect required"
+                    )
+                    raise VideoEnded
+        finally:
+            cap.release()
+            logger.debug(f"released video source {self._in_fname}")
 
     @staticmethod
     def _delay_exit_if_requested(logger):

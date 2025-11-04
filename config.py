@@ -89,6 +89,31 @@ def config_from_file(
         raise ConfigValidationError("model.video_read_timeout_ms must be an int")
     if cfg.model.video_read_timeout_ms < 1000:
         raise ConfigValidationError("model.video_read_timeout_ms must be >= 1000")
+    cfg.model.stream_reconnect_initial_backoff_s = model_cfg_dict.get(
+        "stream_reconnect_initial_backoff_s",
+        cfg.model.stream_reconnect_initial_backoff_s,
+    )
+    if not isinstance(cfg.model.stream_reconnect_initial_backoff_s, (int, float)):
+        raise ConfigValidationError(
+            "model.stream_reconnect_initial_backoff_s must be a number"
+        )
+    if cfg.model.stream_reconnect_initial_backoff_s <= 0:
+        raise ConfigValidationError(
+            "model.stream_reconnect_initial_backoff_s must be > 0"
+        )
+    cfg.model.stream_reconnect_max_backoff_s = model_cfg_dict.get(
+        "stream_reconnect_max_backoff_s", cfg.model.stream_reconnect_max_backoff_s
+    )
+    if not isinstance(cfg.model.stream_reconnect_max_backoff_s, (int, float)):
+        raise ConfigValidationError(
+            "model.stream_reconnect_max_backoff_s must be a number"
+        )
+    if cfg.model.stream_reconnect_max_backoff_s < (
+        cfg.model.stream_reconnect_initial_backoff_s
+    ):
+        raise ConfigValidationError(
+            "model.stream_reconnect_max_backoff_s must be >= model.stream_reconnect_initial_backoff_s"
+        )
 
     # notifier:
     ntfy_cfg_dict = cfg_dict.get("notifier", {})
