@@ -244,7 +244,9 @@ class PredModel(lib_mpex.ChildProcess):
                     raise
                 if not is_stream and self._config.loop_video:
                     loop_count += 1
-                    logger.warning(f"video error '{exc}'; restarting loop #{loop_count}")
+                    logger.warning(
+                        f"video error '{exc}'; restarting loop #{loop_count}"
+                    )
                 else:
                     logger.warning(f"video stream error '{exc}'; will try to reopen")
             else:
@@ -265,7 +267,9 @@ class PredModel(lib_mpex.ChildProcess):
 
             if is_stream or self._config.loop_video:
                 if is_stream:
-                    logger.info(f"attempting to reopen stream in {reconnect_delay_s:.1f}s ...")
+                    logger.info(
+                        f"attempting to reopen stream in {reconnect_delay_s:.1f}s ..."
+                    )
                 time.sleep(reconnect_delay_s)
             # loop continues until the process is terminated by the parent
 
@@ -276,7 +280,7 @@ class PredModel(lib_mpex.ChildProcess):
         is_stream: Final = self._in_fname.casefold().startswith(
             "rtsp:"
         ) or self._in_fname.casefold().startswith("rtsps:")
-        
+
         liveness_tick_t: Final = datetime.timedelta(
             seconds=self._config.liveness_tick_s
         )
@@ -285,11 +289,11 @@ class PredModel(lib_mpex.ChildProcess):
         logger.info(f"opening video source {self._in_fname}")
         self._frames_seen_last_run = 0
         cap = cv2.VideoCapture(self._in_fname)
-        
+
         total_frames = None
         video_fps = None
         frame_delay_s = None
-        
+
         try:
             # Set read timeout to prevent indefinite blocking during RTSP connection issues
             cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, self._config.video_read_timeout_ms)
@@ -299,36 +303,42 @@ class PredModel(lib_mpex.ChildProcess):
             )
             if not cap.isOpened():
                 raise IOError(f"failed to open video source {self._in_fname}")
-            
+
             if not is_stream:
                 total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
                 video_fps = cap.get(cv2.CAP_PROP_FPS)
                 if total_frames > 0:
-                    logger.info(f"video file has {total_frames} frames at {video_fps:.2f} fps")
+                    logger.info(
+                        f"video file has {total_frames} frames at {video_fps:.2f} fps"
+                    )
                     if loop_count > 0:
                         logger.info(f"starting loop #{loop_count}")
-                
+
                 if self._config.fps is not None and self._config.fps > 0:
                     frame_delay_s = 1.0 / self._config.fps
-                    logger.info(f"playback speed controlled at {self._config.fps} fps (delay: {frame_delay_s*1000:.1f}ms per frame)")
-            
+                    logger.info(
+                        f"playback speed controlled at {self._config.fps} fps (delay: {frame_delay_s * 1000:.1f}ms per frame)"
+                    )
+
             frame_start_time = None
             while cap.isOpened():
                 if frame_delay_s is not None:
                     frame_start_time = time.time()
-                
+
                 success, frame = cap.read()
                 if success and frame is not None:
                     self._frames_seen_last_run += 1
                     utcnow = datetime.datetime.now(datetime.UTC)
                     frames_since_last_liveness_tick += 1
-                    
+
                     if not is_stream and total_frames and total_frames > 0:
                         current_frame = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
                         if current_frame % max(1, total_frames // 10) == 0:
                             progress_pct = (current_frame / total_frames) * 100
-                            logger.debug(f"video progress: {current_frame}/{total_frames} frames ({progress_pct:.1f}%)")
-                    
+                            logger.debug(
+                                f"video progress: {current_frame}/{total_frames} frames ({progress_pct:.1f}%)"
+                            )
+
                     results = model.track(
                         frame,
                         conf=self._config.confidence,
@@ -373,7 +383,7 @@ class PredModel(lib_mpex.ChildProcess):
                                 url=self._config.healthcheck_ping_url,
                             )
                         )
-                    
+
                     if frame_delay_s is not None and frame_start_time is not None:
                         elapsed = time.time() - frame_start_time
                         sleep_time = frame_delay_s - elapsed
