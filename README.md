@@ -130,6 +130,54 @@ python3 ./main.py --config /path/to/config.json --video 'rtsp://example.com/myst
 
 If you're running on Apple Silicon, you should see a log message at startup informing you the model is using the `mps` device.
 
+## Testing with Video Clips
+
+For development and testing purposes, you can use video files instead of live RTSP streams. This makes it much easier to test notification criteria, track detection, and other features without needing a live camera feed.
+
+### Basic Video File Playback
+
+Simply provide a path to a video file instead of an RTSP URL:
+
+```shell
+python3 ./main.py --config /path/to/config.json --video /path/to/test-video.mp4
+```
+
+By default, the video will play once and the program will exit when the video ends.
+
+### Loop Mode for Continuous Testing
+
+To make a video file loop continuously (like an RTSP stream would), set `loop_video` to `true` in your config file:
+
+```json
+{
+  "model": {
+    "loop_video": true
+  }
+}
+```
+
+This is particularly useful for testing notification criteria and track detection over extended periods without manually restarting the program.
+
+### Controlling Playback Speed
+
+You can control the playback speed of video files using the `fps` setting in your config file. This is useful for:
+
+- **Slowing down playback** for detailed debugging: set `fps` lower than the video's native frame rate
+- **Speeding up testing**: set `fps` higher to process the video faster
+
+```json
+{
+  "model": {
+    "fps": 5
+  }
+}
+```
+
+For example, if your test video is 30 fps and you set `fps` to 5, playback will be slowed down 6x, making it easier to observe what's happening. Conversely, setting `fps` to 60 would speed up a 30 fps video by 2x.
+
+> [!NOTE]
+> The `fps` and `loop_video` settings only affect video files, not RTSP streams.
+
 ## Overview of Operation
 
 This section briefly explains the different components of the program. In particular, this understanding will help you effectively configure `driveway-monitor`.
@@ -209,6 +257,8 @@ The file is a single JSON object containing the following keys, or a subset ther
   - `video_read_timeout_ms`: Timeout (milliseconds) applied to the underlying OpenCV reader so that RTSP hiccups do not block the pipeline forever.
   - `stream_reconnect_initial_backoff_s`: Initial delay before attempting to reopen a failed RTSP stream. Each consecutive failure without successfully processing frames doubles this delay.
   - `stream_reconnect_max_backoff_s`: Upper bound for the reconnection backoff delay. Useful when a camera is offline for an extended period but the process should keep retrying.
+  - `fps`: (Optional) Control playback speed for video files by limiting frame processing rate. Useful for testing: set lower than the video's native FPS to slow down playback for debugging, or higher to speed up testing. Does not affect RTSP streams.
+  - `loop_video`: (Optional, default: `false`) When set to `true`, video files will loop continuously like RTSP streams, making it easy to test with recorded clips without manually restarting. Does not affect RTSP streams.
 - `tracker`: Configures the system that builds tracks from the model's detections over time.
   - `inactive_track_prune_s`: Specifies the number of seconds after which an inactive track is pruned. This prevents incorrectly adding a new prediction to an old track.
   - `track_connect_min_overlap`: Minimum overlap percentage of a prediction box with the average of the last 2 boxes in an existing track for the prediction to be added to that track.

@@ -114,6 +114,15 @@ def config_from_file(
         raise ConfigValidationError(
             "model.stream_reconnect_max_backoff_s must be >= model.stream_reconnect_initial_backoff_s"
         )
+    cfg.model.fps = model_cfg_dict.get("fps", cfg.model.fps)
+    if cfg.model.fps is not None:
+        if not isinstance(cfg.model.fps, (int, float)):
+            raise ConfigValidationError("model.fps must be a number")
+        if cfg.model.fps <= 0:
+            raise ConfigValidationError("model.fps must be > 0")
+    cfg.model.loop_video = model_cfg_dict.get("loop_video", cfg.model.loop_video)
+    if not isinstance(cfg.model.loop_video, bool):
+        raise ConfigValidationError("model.loop_video must be a bool")
 
     # notifier:
     ntfy_cfg_dict = cfg_dict.get("notifier", {})
