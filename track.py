@@ -10,8 +10,16 @@ from typing import List, Optional, Final
 # noinspection PyPackageRequirements
 import celpy
 import cv2
-import torch
-from ultralytics import YOLO
+
+try:
+    import torch
+except ImportError:
+    torch = None
+
+try:
+    from ultralytics import YOLO
+except ImportError:
+    YOLO = None
 
 import lib_dmutil
 import lib_mpex
@@ -186,6 +194,12 @@ class PredModel(lib_mpex.ChildProcess):
         self._frames_seen_last_run = 0
 
     def _run(self):
+        if YOLO is None or torch is None:
+            raise ImportError(
+                "torch and ultralytics are required to run the model. "
+                "Install them with: pip install -r requirements.txt"
+            )
+
         is_stream: Final = self._in_fname.casefold().startswith(
             "rtsp:"
         ) or self._in_fname.casefold().startswith("rtsps:")
