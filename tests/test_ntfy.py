@@ -26,7 +26,7 @@ class TestImageAttachMethod(TestCase):
     def test_from_str_case_insensitive(self):
         result = ImageAttachMethod.from_str("ATTACH")
         self.assertEqual(ImageAttachMethod.ATTACH, result)
-        
+
         result = ImageAttachMethod.from_str("Click")
         self.assertEqual(ImageAttachMethod.CLICK, result)
 
@@ -71,7 +71,7 @@ class TestEnrichmentType(TestCase):
     def test_from_str_case_insensitive(self):
         result = EnrichmentType.from_str("OLLAMA")
         self.assertEqual(EnrichmentType.OLLAMA, result)
-        
+
         result = EnrichmentType.from_str("OpenAI")
         self.assertEqual(EnrichmentType.OPENAI, result)
 
@@ -85,7 +85,7 @@ class TestObjectNotification(TestCase):
             id="test123",
             jpeg_image=None,
         )
-        
+
         self.assertEqual("Car arrived in driveway", notif.message())
 
     def test_message_with_enrichment(self):
@@ -97,7 +97,7 @@ class TestObjectNotification(TestCase):
             jpeg_image=None,
             enriched_class="red sedan",
         )
-        
+
         self.assertEqual("Likely: red sedan.", notif.message())
 
     def test_title(self):
@@ -108,7 +108,7 @@ class TestObjectNotification(TestCase):
             id="test456",
             jpeg_image=None,
         )
-        
+
         self.assertEqual("Person detected", notif.title())
 
     def test_ntfy_tags_car(self):
@@ -119,7 +119,7 @@ class TestObjectNotification(TestCase):
             id="test",
             jpeg_image=None,
         )
-        
+
         self.assertEqual("blue_car", notif.ntfy_tags())
 
     def test_ntfy_tags_truck(self):
@@ -130,7 +130,7 @@ class TestObjectNotification(TestCase):
             id="test",
             jpeg_image=None,
         )
-        
+
         self.assertEqual("truck", notif.ntfy_tags())
 
     def test_ntfy_tags_person(self):
@@ -141,7 +141,7 @@ class TestObjectNotification(TestCase):
             id="test",
             jpeg_image=None,
         )
-        
+
         self.assertEqual("walking", notif.ntfy_tags())
 
     def test_ntfy_tags_unknown(self):
@@ -152,7 +152,7 @@ class TestObjectNotification(TestCase):
             id="test",
             jpeg_image=None,
         )
-        
+
         self.assertEqual("camera_flash", notif.ntfy_tags())
 
 
@@ -162,7 +162,7 @@ class TestFeedbackNotification(TestCase):
             type=FeedbackType.MUTED,
             key="test123",
         )
-        
+
         self.assertEqual("Notifications muted.", notif.message())
 
     def test_message_unmuted(self):
@@ -170,7 +170,7 @@ class TestFeedbackNotification(TestCase):
             type=FeedbackType.UNMUTED,
             key="test123",
         )
-        
+
         self.assertEqual("Notifications unmuted.", notif.message())
 
     def test_title(self):
@@ -178,7 +178,7 @@ class TestFeedbackNotification(TestCase):
             type=FeedbackType.MUTED,
             key="test123",
         )
-        
+
         self.assertEqual("driveway-monitor", notif.title())
 
     def test_ntfy_tags_muted(self):
@@ -186,7 +186,7 @@ class TestFeedbackNotification(TestCase):
             type=FeedbackType.MUTED,
             key="test123",
         )
-        
+
         self.assertEqual("mute", notif.ntfy_tags())
 
     def test_ntfy_tags_unmuted(self):
@@ -194,7 +194,7 @@ class TestFeedbackNotification(TestCase):
             type=FeedbackType.UNMUTED,
             key="test123",
         )
-        
+
         self.assertEqual("loud_sound", notif.ntfy_tags())
 
 
@@ -211,12 +211,12 @@ class TestNotifierUtilityMethods(TestCase):
         )
 
     def test_strip_markdown_fences_with_json_fence(self):
-        input_str = "```json\n{\"key\": \"value\"}\n```"
+        input_str = '```json\n{"key": "value"}\n```'
         result = self.notifier._strip_markdown_fences(input_str)
         self.assertEqual('{"key": "value"}', result)
 
     def test_strip_markdown_fences_with_generic_fence(self):
-        input_str = "```\n{\"key\": \"value\"}\n```"
+        input_str = '```\n{"key": "value"}\n```'
         result = self.notifier._strip_markdown_fences(input_str)
         self.assertEqual('{"key": "value"}', result)
 
@@ -226,13 +226,13 @@ class TestNotifierUtilityMethods(TestCase):
         self.assertEqual('{"key": "value"}', result)
 
     def test_strip_markdown_fences_with_whitespace(self):
-        input_str = "  ```json\n{\"key\": \"value\"}\n```  "
+        input_str = '  ```json\n{"key": "value"}\n```  '
         result = self.notifier._strip_markdown_fences(input_str)
         self.assertEqual('{"key": "value"}', result)
 
     def test_ntfy_mute_action_blob_10_minutes(self):
         result = self.notifier._ntfy_mute_action_blob(600, "key123")
-        
+
         self.assertIn("Mute 10m", result)
         self.assertIn("http://example.com:5550/mute", result)
         self.assertIn('"s": 600', result)
@@ -240,26 +240,26 @@ class TestNotifierUtilityMethods(TestCase):
 
     def test_ntfy_mute_action_blob_1_hour(self):
         result = self.notifier._ntfy_mute_action_blob(3600, "key123")
-        
+
         self.assertIn("Mute 1h", result)
         self.assertIn("http://example.com:5550/mute", result)
         self.assertIn('"s": 3600', result)
 
     def test_ntfy_mute_action_blob_4_hours(self):
         result = self.notifier._ntfy_mute_action_blob(14400, "key123")
-        
+
         self.assertIn("Mute 4h", result)
         self.assertIn('"s": 14400', result)
 
     def test_ntfy_mute_action_blob_1_hour_30_minutes(self):
         result = self.notifier._ntfy_mute_action_blob(5400, "key123")
-        
+
         self.assertIn("Mute 1h 30m", result)
         self.assertIn('"s": 5400', result)
 
     def test_ntfy_mute_action_blob_unmute(self):
         result = self.notifier._ntfy_mute_action_blob(0, "key123")
-        
+
         self.assertIn("Unmute", result)
         self.assertNotIn("Mute", result.replace("Unmute", ""))
         self.assertIn('"s": 0', result)
