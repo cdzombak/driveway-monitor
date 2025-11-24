@@ -121,7 +121,9 @@ jobs:
   docker-amd64-cuda:
     name: Docker Image (amd64-cuda)
     needs: [meta, lint, test]
-    if: needs.meta.outputs.is_running_version_tag_update != 'true'
+    if: |
+      needs.meta.outputs.is_running_version_tag_update != 'true' &&
+      needs.meta.outputs.is_pull_request != 'true'
     runs-on: namespace-profile-driveway-monitor
     permissions:
       contents: read
@@ -176,7 +178,9 @@ jobs:
   docker-amd64-cpu:
     name: Docker Image (amd64-cpu)
     needs: [meta, lint, test]
-    if: needs.meta.outputs.is_running_version_tag_update != 'true'
+    if: |
+      needs.meta.outputs.is_running_version_tag_update != 'true' &&
+      needs.meta.outputs.is_pull_request != 'true'
     runs-on: namespace-profile-driveway-monitor
     permissions:
       contents: read
@@ -228,7 +232,9 @@ jobs:
   docker-arm64:
     name: Docker Image (arm64)
     needs: [meta, lint, test]
-    if: needs.meta.outputs.is_running_version_tag_update != 'true'
+    if: |
+      needs.meta.outputs.is_running_version_tag_update != 'true' &&
+      needs.meta.outputs.is_pull_request != 'true'
     runs-on: namespace-profile-driveway-monitor
     permissions:
       contents: read
