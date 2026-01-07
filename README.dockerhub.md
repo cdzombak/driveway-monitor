@@ -29,8 +29,14 @@ services:
     image: cdzombak/driveway-monitor:1-amd64
     volumes:
       - ./config.json:/config.json:ro
-      - ./enrichment-prompts:/enrichment-prompts:ro  # optional, for AI enrichment
-    command: ["--config", "/config.json", "--video", "rtsp://192.168.0.77:7441/your-stream"]
+      - ./enrichment-prompts:/enrichment-prompts:ro # optional, for AI enrichment
+    command:
+      [
+        "--config",
+        "/config.json",
+        "--video",
+        "rtsp://192.168.0.77:7441/your-stream",
+      ]
     ports:
       - 5550:5550
     deploy:
