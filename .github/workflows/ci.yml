@@ -277,16 +277,7 @@ jobs:
     name: Ntfy
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
-    needs:
-      [
-        meta,
-        lint,
-        test,
-        docker-amd64,
-        docker-arm64,
-        release,
-        tags,
-      ]
+    needs: [meta, lint, test, docker-amd64, docker-arm64, release, tags]
     steps:
       - name: Send success notification
         uses: niniyas/ntfy-action@9c6dc60073292f562769f83df2ace9f64ab31c78
