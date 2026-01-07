@@ -241,7 +241,7 @@ The file is a single JSON object containing the following keys, or a subset ther
   - `external_base_url`: External base URL for the web server (e.g. `http://me.example-tailnet.ts.net:5550`). Used to generate URLs in notifications.
   - `port`: Port to bind the web server to.
 
-### The `notification_criteria.track_cel.track_cel` expression
+### The `notification_criteria.track_cel` expression
 
 This field is a string representing a [CEL](https://cel.dev) expression that will be evaluated for each track. If the expression evaluates to `true`, a notification will be sent.
 
@@ -259,6 +259,7 @@ The expression has access to a single variable, `track`. This variable is a dict
 - `last_box`: the most recent prediction's `Box`
 - `total_box`: the smallest `Box` that covers all predictions in the track
 - `average_box`: the average of every `Box` in the track
+- `movement_vector`: vector from start to end of the track (see "Movement vector" below)
 
 Each `Box` has:
 
