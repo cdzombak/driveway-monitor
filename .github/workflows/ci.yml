@@ -253,7 +253,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           repository: ${{ needs.meta.outputs.dockerhub_owner }}/${{ needs.meta.outputs.project_name }}
-          readme-filepath: ./README.md
+          readme-filepath: ./README.dockerhub.md
           short-description: ${{ github.event.repository.description }}
 
   tags:
