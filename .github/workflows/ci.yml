@@ -118,8 +118,8 @@ jobs:
         run: |
           python -m unittest tests/*.py
 
-  docker-amd64-cuda:
-    name: Docker Image (amd64-cuda)
+  docker-amd64:
+    name: Docker Image (amd64)
     needs: [meta, lint, test]
     if: |
       needs.meta.outputs.is_running_version_tag_update != 'true' &&
@@ -160,67 +160,13 @@ jobs:
             type=semver,pattern={{major}}
           flavor: |
             latest=false
-            suffix=-amd64-cuda
+            suffix=-amd64
 
       - name: "Build & Push"
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile-amd64-cuda
-          platforms: amd64
-          builder: ${{ steps.buildx.outputs.name }}
-          push: ${{ needs.meta.outputs.is_pull_request != 'true' }}
-          tags: ${{ steps.docker_meta.outputs.tags }}
-          labels: ${{ steps.docker_meta.outputs.labels }}
-          build-args: |
-            BIN_VERSION=${{ needs.meta.outputs.bin_version }}
-
-  docker-amd64-cpu:
-    name: Docker Image (amd64-cpu)
-    needs: [meta, lint, test]
-    if: |
-      needs.meta.outputs.is_running_version_tag_update != 'true' &&
-      needs.meta.outputs.is_pull_request != 'true'
-    runs-on: namespace-profile-driveway-monitor
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout
-        uses: namespacelabs/nscloud-checkout-action@v7
-
-      - name: Login to Docker Hub
-        if: needs.meta.outputs.is_pull_request != 'true'
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: namespacelabs/nscloud-setup-buildx-action@v0
-
-      - name: "Meta"
-        id: docker_meta
-        uses: docker/metadata-action@v5
-        with:
-          images: |
-            ${{ needs.meta.outputs.dockerhub_owner }}/${{ needs.meta.outputs.project_name }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-          flavor: |
-            latest=false
-            suffix=-amd64-cpu
-
-      - name: "Build & Push"
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile-amd64-cpu
+          file: ./Dockerfile-amd64
           platforms: amd64
           builder: ${{ steps.buildx.outputs.name }}
           push: ${{ needs.meta.outputs.is_pull_request != 'true' }}
@@ -285,7 +231,7 @@ jobs:
 
   release:
     name: (Pre)Release
-    needs: [meta, lint, test, docker-amd64-cuda, docker-amd64-cpu, docker-arm64]
+    needs: [meta, lint, test, docker-amd64, docker-arm64]
     if: >-
       needs.meta.outputs.is_release == 'true' ||
       needs.meta.outputs.is_prerelease == 'true'
@@ -336,8 +282,7 @@ jobs:
         meta,
         lint,
         test,
-        docker-amd64-cuda,
-        docker-amd64-cpu,
+        docker-amd64,
         docker-arm64,
         release,
         tags,

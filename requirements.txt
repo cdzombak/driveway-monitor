@@ -45,7 +45,7 @@ torchvision==0.18.0
 tqdm==4.66.4
 typing_extensions==4.11.0
 tzdata==2024.1
-ultralytics==8.3.58
+ultralytics==8.3.248
 urllib3==2.2.2
 waitress==3.0.1
 Werkzeug==3.0.6
