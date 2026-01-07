@@ -18,14 +18,11 @@ tasks:
       - python -m unittest tests/*.py
     desc: Run tests
   build:
-    deps: [build-amd64-cuda, build-amd64-cpu, build-arm64]
+    deps: [build-amd64, build-arm64]
     desc: Build images for all supported platforms/architectures
-  build-amd64-cuda:
+  build-amd64:
     cmds:
-      - docker build . -f Dockerfile-amd64-cuda
-  build-amd64-cpu:
-    cmds:
-      - docker build . -f Dockerfile-amd64-cpu
+      - docker build . -f Dockerfile-amd64
   build-arm64:
     cmds:
       - docker build . -f Dockerfile-arm64

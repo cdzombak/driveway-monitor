@@ -2,9 +2,9 @@
 
 **Receive customizable, AI-powered notifications when someone arrives in your driveway.**
 
-`driveway-monitor` accepts an RTSP video stream (or, for testing purposes, a video file) and uses the [YOLOv8 model](https://docs.ultralytics.com/models/yolov8/) to track objects in the video. When an object meets your notification criteria (highly customizable; see "Configuration" below), `driveway-monitor` will notify you via [Ntfy](https://ntfy.sh). The notification includes a snapshot of the object that triggered the notification and provides options to mute notifications for a period of time.
+`driveway-monitor` accepts an RTSP video stream (or, for testing purposes, a video file) and uses the [YOLO11 model](https://docs.ultralytics.com/models/yolo11/) to track objects in the video. When an object meets your notification criteria (highly customizable; see "Configuration" below), `driveway-monitor` will notify you via [Ntfy](https://ntfy.sh). The notification includes a snapshot of the object that triggered the notification and provides options to mute notifications for a period of time.
 
-The YOLO computer vision model can run on your CPU or on NVIDIA or Apple Silicon GPUs. It would be possible to use a customized model, and in fact I originally planned to refine my own model based on YOLOv8, but it turned out that the pretrained YOLOv8 model seems to work fine.
+The YOLO computer vision model can run on your CPU or on NVIDIA or Apple Silicon GPUs. It would be possible to use a customized model, and in fact I originally planned to refine my own model based on YOLO11, but it turned out that the pretrained YOLO11 model seems to work fine.
 
 Optionally, `driveway-monitor` can also use an instance of [Ollama](https://ollama.com) to provide a detailed description of the object that triggered the notification.
 
@@ -30,9 +30,8 @@ The `main.py` program only takes a few options on the CLI. Most configuration is
 
 Due to the Python 3.12 requirement and the annoyance of maintaining a virtualenv, I recommend running this application via Docker. The following images are available:
 
-- `cdzombak/driveway-monitor:*-amd64-cuda`: NVIDIA image for amd64 hosts
-- `cdzombak/driveway-monitor:*-amd64-cpu`: CPU-only image for amd64 hosts
-  `cdzombak/driveway-monitor:*-arm64`: image for arm64 hosts (e.g. Apple Silicon and Raspberry Pi 4/5)
+- `cdzombak/driveway-monitor:*-amd64`: Image for amd64 hosts (supports both CUDA and CPU; auto-detects at runtime)
+- `cdzombak/driveway-monitor:*-arm64`: Image for arm64 hosts (e.g. Apple Silicon and Raspberry Pi 4/5)
 
 > [!NOTE]
 > To run the model on an Apple Silicon GPU, you'll need to set up a Python virtualenv and run `driveway-monitor` directly, not via Docker. See "Running with Python" below.
@@ -40,7 +39,7 @@ Due to the Python 3.12 requirement and the annoyance of maintaining a virtualenv
 Running a one-off `driveway-monitor` process with Docker might look like:
 
 ```shell
-docker run --rm -v ./config.json:/config.json:ro cdzombak/driveway-monitor:1-amd64-cpu --config /config.json --video "rtsps://192.168.0.77:7441/abcdef?enableSrtp" --debug
+docker run --rm -v ./config.json:/config.json:ro cdzombak/driveway-monitor:1-amd64 --config /config.json --video "rtsps://192.168.0.77:7441/abcdef?enableSrtp" --debug
 ```
 
 ### Sample `docker-compose.yml`
@@ -51,7 +50,7 @@ This `docker-compose.yml` file runs `driveway-monitor` on an amd64 host, with NV
 ---
 services:
   driveway-monitor:
-    image: cdzombak/driveway-monitor:1-amd64-cuda
+    image: cdzombak/driveway-monitor:1-amd64
     volumes:
       - ./config.json:/config.json:ro
       - ./enrichment-prompts:/enrichment-prompts:ro
@@ -138,7 +137,7 @@ This section briefly explains the different components of the program. In partic
 
 (Configuration key: `model`.)
 
-The prediction process consumes a video stream frame-by-frame and feeds each frame to the YOLOv8 model. The model produces predictions of objects in the frame, including their classifications (e.g. "car") and rectangular bounding boxes. These predictions are passed to the tracker process.
+The prediction process consumes a video stream frame-by-frame and feeds each frame to the YOLO11 model. The model produces predictions of objects in the frame, including their classifications (e.g. "car") and rectangular bounding boxes. These predictions are passed to the tracker process.
 
 For RTSP inputs, the capture loop now keeps retrying indefinitely when the camera temporarily drops offline. Reconnection uses an exponential backoff that resets once frames flow again; tune it with the `model.stream_reconnect_*` settings if you need faster or slower retries.
 
@@ -456,7 +455,7 @@ Thanks to [Namespace](https://namespace.so) for providing GitHub Actions runners
 
 ## See Also
 
-- [YOLOv8](https://docs.ultralytics.com/models/yolov8/)
+- [YOLO11](https://docs.ultralytics.com/models/yolo11/)
 - [CEL](https://cel.dev)
 - [Ntfy](https://ntfy.sh)
 - [Uptime Kuma](https://github.com/louislam/uptime-kuma)

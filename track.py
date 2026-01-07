@@ -208,7 +208,7 @@ class PredModel(lib_mpex.ChildProcess):
         logging.basicConfig(level=self._config.log_level, format=LOG_DEFAULT_FMT)
         logger.debug(f"healthcheck ping URL: {self._config.healthcheck_ping_url}")
 
-        model_name: Final = "yolov8n.pt"
+        model_name: Final = "yolo11n.pt"
         logger.info(f"starting model {model_name}")
         model = YOLO(model_name)
 
