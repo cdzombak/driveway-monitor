@@ -147,7 +147,7 @@ class TestObjectNotification(TestCase):
     def test_ntfy_tags_unknown(self):
         notif = ObjectNotification(
             t=datetime.datetime(2024, 1, 1, 12, 0, 0, tzinfo=datetime.UTC),
-            classification="bicycle",
+            classification="unicorn",
             event="detected",
             id="test",
             jpeg_image=None,
