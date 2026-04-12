@@ -146,6 +146,9 @@ class ObjectNotification(Notification):
             "car": "blue_car",
             "truck": "truck",
             "person": "walking",
+            "bus": "bus",
+            "bicycle": "bicyclist",
+            "motorcycle": "motorcycle",
         }.get(self.classification, "camera_flash")
 
 
