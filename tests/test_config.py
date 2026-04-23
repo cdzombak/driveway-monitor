@@ -1,3 +1,4 @@
+import importlib
 import sys
 import tempfile
 import types
@@ -20,8 +21,8 @@ flask_cors_stub = types.ModuleType("flask_cors")
 flask_cors_stub.CORS = lambda *args, **kwargs: None
 sys.modules.setdefault("flask_cors", flask_cors_stub)
 
-from config import config_from_file
-from ntfy import NtfyPriority
+config_from_file = importlib.import_module("config").config_from_file
+NtfyPriority = importlib.import_module("ntfy").NtfyPriority
 
 
 class TestConfig(TestCase):
