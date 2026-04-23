@@ -440,25 +440,7 @@ class Tracker(lib_mpex.ChildProcess):
             ]
 
             # connect to a preexisting track if possible:
-            track: Optional[Track] = None
-            for candidate in self._tracks:
-                overlap_needed = self._config.track_connect_min_overlap
-                # overlap requirement increases is classification is different:
-                if p.classification != candidate.classification():
-                    overlap_needed = overlap_needed * 1.5
-                # FUTURE(cdzombak): consider velocity vector similarity
-                candidate_ia = candidate.last_2_box_avg().percent_intersection_with(
-                    p.box
-                )
-                if candidate_ia > overlap_needed:
-                    if track is not None:
-                        if candidate_ia > track.last_box().percent_intersection_with(
-                            p.box
-                        ):
-                            track = candidate
-                    else:
-                        track = candidate
-                    break
+            track: Optional[Track] = self._select_existing_track(p)
 
             # update matching track or create a new track if necessary:
             if track is not None:
@@ -554,3 +536,23 @@ class Tracker(lib_mpex.ChildProcess):
                 )
             )
             track.triggered_notification = True
+
+    def _select_existing_track(self, p: TrackPrediction) -> Optional[Track]:
+        track: Optional[Track] = None
+        best_overlap = 0.0
+        for candidate in self._tracks:
+            overlap_needed = self._config.track_connect_min_overlap
+            # overlap requirement increases if classification is different:
+            if p.classification != candidate.classification():
+                overlap_needed = overlap_needed * 1.5
+            # FUTURE(cdzombak): consider velocity vector similarity
+            candidate_overlap = candidate.last_2_box_avg().percent_intersection_with(
+                p.box
+            )
+            if candidate_overlap > overlap_needed and (
+                track is None or candidate_overlap > best_overlap
+            ):
+                track = candidate
+                best_overlap = candidate_overlap
+
+        return track

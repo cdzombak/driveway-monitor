@@ -4,7 +4,14 @@ from unittest import TestCase
 import numpy as np
 
 from lib_geom import Point, Box, Vector
-from track import TrackPrediction, Track, PredModel, ModelConfig
+from track import (
+    TrackPrediction,
+    Track,
+    PredModel,
+    ModelConfig,
+    Tracker,
+    TrackerConfig,
+)
 
 
 class TestTrackPrediction(TestCase):
@@ -308,3 +315,56 @@ class TestPredModelRuntimeOptions(TestCase):
 
         self.assertEqual("cpu", dev)
         self.assertTrue(half)
+
+
+class TestTrackerTrackSelection(TestCase):
+    def _make_prediction(self, *, box: Box, classification: str = "car", sec: int = 0):
+        return TrackPrediction(
+            t=datetime.datetime(2024, 1, 1, 12, 0, sec, tzinfo=datetime.UTC),
+            model_id=1,
+            classification=classification,
+            is_track=True,
+            box=box,
+            image=np.zeros((10, 10, 3), dtype=np.uint8),
+        )
+
+    def test_select_existing_track_picks_best_overlap(self):
+        tracker = Tracker(TrackerConfig(track_connect_min_overlap=0.1), None, None)
+
+        weaker = Track.from_prediction(
+            self._make_prediction(box=Box(a=Point(0.10, 0.10), b=Point(0.42, 0.42)))
+        )
+        stronger = Track.from_prediction(
+            self._make_prediction(box=Box(a=Point(0.18, 0.18), b=Point(0.52, 0.52)))
+        )
+        tracker._tracks = [weaker, stronger]
+
+        incoming = self._make_prediction(
+            box=Box(a=Point(0.20, 0.20), b=Point(0.50, 0.50)),
+            sec=1,
+        )
+
+        selected = tracker._select_existing_track(incoming)
+
+        self.assertIs(stronger, selected)
+
+    def test_select_existing_track_requires_higher_threshold_for_mismatched_class(self):
+        tracker = Tracker(TrackerConfig(track_connect_min_overlap=0.2), None, None)
+
+        truck_track = Track.from_prediction(
+            self._make_prediction(
+                box=Box(a=Point(0.10, 0.10), b=Point(0.40, 0.40)),
+                classification="truck",
+            )
+        )
+        tracker._tracks = [truck_track]
+
+        incoming = self._make_prediction(
+            box=Box(a=Point(0.22, 0.22), b=Point(0.52, 0.52)),
+            classification="car",
+            sec=1,
+        )
+
+        selected = tracker._select_existing_track(incoming)
+
+        self.assertIsNone(selected)
