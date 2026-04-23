@@ -212,21 +212,7 @@ class PredModel(lib_mpex.ChildProcess):
         logger.info(f"starting model {model_name}")
         model = YOLO(model_name)
 
-        dev = self._config.device
-        if dev is None:
-            has_mps = torch.backends.mps.is_available()
-            has_cuda = torch.cuda.is_available()
-            if has_mps:
-                dev = "mps"
-            elif has_cuda:
-                dev = "cuda"
-            else:
-                dev = "cpu"
-        half = self._config.half
-        if half is None and dev in {"mps", "cuda"}:
-            half = True
-        else:
-            half = False
+        dev, half = self._resolve_device_and_half()
         logger.info(f"{model_name} will use device '{dev}' (half={half})")
 
         reconnect_delay_s = self._config.stream_reconnect_initial_backoff_s
@@ -357,6 +343,29 @@ class PredModel(lib_mpex.ChildProcess):
             return
         logger.info(f"DM_DEV_EXIT_DELAY_MINS={exit_mins_str}; delaying exit")
         time.sleep(exit_mins * 60)
+
+    @staticmethod
+    def _device_supports_half(dev: str) -> bool:
+        dev_cf = dev.casefold()
+        return dev_cf == "mps" or dev_cf.startswith("cuda")
+
+    def _resolve_device_and_half(self) -> tuple[str, bool]:
+        dev = self._config.device
+        if dev is None:
+            has_mps = torch.backends.mps.is_available()
+            has_cuda = torch.cuda.is_available()
+            if has_mps:
+                dev = "mps"
+            elif has_cuda:
+                dev = "cuda"
+            else:
+                dev = "cpu"
+
+        half = self._config.half
+        if half is None:
+            half = self._device_supports_half(dev)
+
+        return dev, half
 
 
 @dataclass

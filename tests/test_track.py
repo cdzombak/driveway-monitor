@@ -4,7 +4,7 @@ from unittest import TestCase
 import numpy as np
 
 from lib_geom import Point, Box, Vector
-from track import TrackPrediction, Track
+from track import TrackPrediction, Track, PredModel, ModelConfig
 
 
 class TestTrackPrediction(TestCase):
@@ -267,3 +267,44 @@ class TestTrack(TestCase):
         cel_value = track.to_cel()
 
         self.assertIsNotNone(cel_value)
+
+
+class TestPredModelRuntimeOptions(TestCase):
+    def test_resolve_device_and_half_enables_half_for_cuda_device_strings(self):
+        model = PredModel(
+            in_fname="video.mp4",
+            config=ModelConfig(device="cuda:0", half=None),
+            output_queue=None,
+            health_ping_queue=None,
+        )
+
+        dev, half = model._resolve_device_and_half()
+
+        self.assertEqual("cuda:0", dev)
+        self.assertTrue(half)
+
+    def test_resolve_device_and_half_preserves_explicit_false(self):
+        model = PredModel(
+            in_fname="video.mp4",
+            config=ModelConfig(device="cuda", half=False),
+            output_queue=None,
+            health_ping_queue=None,
+        )
+
+        dev, half = model._resolve_device_and_half()
+
+        self.assertEqual("cuda", dev)
+        self.assertFalse(half)
+
+    def test_resolve_device_and_half_preserves_explicit_true(self):
+        model = PredModel(
+            in_fname="video.mp4",
+            config=ModelConfig(device="cpu", half=True),
+            output_queue=None,
+            health_ping_queue=None,
+        )
+
+        dev, half = model._resolve_device_and_half()
+
+        self.assertEqual("cpu", dev)
+        self.assertTrue(half)
