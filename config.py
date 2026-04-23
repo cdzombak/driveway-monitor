@@ -131,10 +131,10 @@ def config_from_file(
     )
     if not isinstance(cfg.notifier.debounce_threshold_s, (int, float)):
         raise ConfigValidationError("notifier.debounce_threshold_s must be a number")
-    default_priority_str = ntfy_cfg_dict.get(
-        "default_priority", cfg.notifier.default_priority
-    )
-    if default_priority_str:
+    default_priority_str = ntfy_cfg_dict.get("default_priority")
+    if default_priority_str is not None:
+        if not isinstance(default_priority_str, str):
+            raise ConfigValidationError("notifier.default_priority must be a string")
         cfg.notifier.default_priority = NtfyPriority.from_str(default_priority_str)
     cfg.notifier.priorities = ntfy_cfg_dict.get("priorities", cfg.notifier.priorities)
     for k, v in cfg.notifier.priorities.items():
