@@ -95,27 +95,30 @@ def main():
 
     procs = [model_proc, tracker_proc, notifier_proc, health_pinger_proc, ws_proc]
 
-    logger.info("starting child processes ...")
-    for p in procs:
-        p.start()
-
     def handle_sigterm(signum, frame):
         logger.info("received SIGTERM; exiting ...")
         sys.exit(0)
 
+    # registered before starting children, so a signal arriving mid-startup
+    # doesn't kill this process and orphan them:
     signal.signal(signal.SIGTERM, handle_sigterm)
 
+    started: list[multiprocessing.Process] = []
     # sys.exit anywhere below (including from handle_sigterm) unwinds through
     # the finally block, which stops the children on every exit path:
     try:
+        logger.info("starting child processes ...")
+        for p in procs:
+            p.start()
+            started.append(p)
         supervise(logger, procs, exit_queue)
     except KeyboardInterrupt:
         logger.info("interrupted; exiting ...")
         sys.exit(130)
     finally:
-        for p in procs:
+        for p in started:
             p.terminate()
-        for p in procs:
+        for p in started:
             p.join()
 
 
