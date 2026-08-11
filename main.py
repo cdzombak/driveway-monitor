@@ -2,6 +2,7 @@ import argparse
 import logging
 import multiprocessing
 import queue
+import signal
 import sys
 import traceback
 
@@ -93,16 +94,35 @@ def main():
 
     procs = [model_proc, tracker_proc, notifier_proc, health_pinger_proc, ws_proc]
 
-    def my_exit(error: bool):
-        logger.debug(f"exiting ({'success' if not error else 'with error'}) ...")
-        for p in procs:
-            p.terminate()
-        sys.exit(1 if error else 0)
-
     logger.info("starting child processes ...")
     for p in procs:
         p.start()
 
+    def handle_sigterm(signum, frame):
+        logger.info("received SIGTERM; exiting ...")
+        sys.exit(0)
+
+    signal.signal(signal.SIGTERM, handle_sigterm)
+
+    # sys.exit anywhere below (including from handle_sigterm) unwinds through
+    # the finally block, which stops the children on every exit path:
+    try:
+        supervise(logger, procs, exit_queue)
+    except KeyboardInterrupt:
+        logger.info("interrupted; exiting ...")
+        sys.exit(130)
+    finally:
+        for p in procs:
+            p.terminate()
+        for p in procs:
+            p.join()
+
+
+def supervise(
+    logger: logging.Logger,
+    procs: list[multiprocessing.Process],
+    exit_queue: multiprocessing.Queue,
+):
     while True:
         try:
             e: lib_mpex.ChildExit = exit_queue.get(timeout=CHILD_CHECK_INTERVAL_S)
@@ -116,16 +136,16 @@ def main():
                 logger.error(
                     f"child (pid {p.pid}) died unexpectedly (exit code {p.exitcode})"
                 )
-            my_exit(True)
+            sys.exit(1)
         else:
             if e.is_exc():
                 logger.error(f"{e.exc_info[0]} {e.exc_info[1]}")
                 logger.error(f"Error in {e.class_name} (pid {e.pid}): {e.error}")
                 traceback.print_exception(*e.exc_info)
-                my_exit(True)
+                sys.exit(1)
             else:
                 logger.info(f"{e.class_name} (pid {e.pid}) exited: {e.error}")
-                my_exit(False)
+                sys.exit(0)
 
 
 if __name__ == "__main__":
