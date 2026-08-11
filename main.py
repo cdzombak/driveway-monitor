@@ -5,6 +5,7 @@ import queue
 import signal
 import sys
 import traceback
+from typing import Final
 
 import lib_mpex
 from config import config_from_file
@@ -14,7 +15,7 @@ from ntfy import Notifier, print_notifier
 from track import PredModel, Tracker
 from web import WebServer
 
-CHILD_CHECK_INTERVAL_S = 5.0
+CHILD_CHECK_INTERVAL_S: Final = 5.0
 
 
 def main():
