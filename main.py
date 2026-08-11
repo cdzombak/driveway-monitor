@@ -1,6 +1,7 @@
 import argparse
 import logging
 import multiprocessing
+import queue
 import sys
 import traceback
 
@@ -11,6 +12,8 @@ from log import LOG_DEFAULT_FMT
 from ntfy import Notifier, print_notifier
 from track import PredModel, Tracker
 from web import WebServer
+
+CHILD_CHECK_INTERVAL_S = 5.0
 
 
 def main():
@@ -88,44 +91,41 @@ def main():
     )
     ws_proc = multiprocessing.Process(target=ws.run, args=(exit_queue,))
 
+    procs = [model_proc, tracker_proc, notifier_proc, health_pinger_proc, ws_proc]
+
     def my_exit(error: bool):
         logger.debug(f"exiting ({'success' if not error else 'with error'}) ...")
-        model_proc.terminate()
-        tracker_proc.terminate()
-        notifier_proc.terminate()
-        health_pinger_proc.terminate()
-        ws_proc.terminate()
+        for p in procs:
+            p.terminate()
         sys.exit(1 if error else 0)
 
     logger.info("starting child processes ...")
-    model_proc.start()
-    tracker_proc.start()
-    notifier_proc.start()
-    health_pinger_proc.start()
-    ws_proc.start()
+    for p in procs:
+        p.start()
 
-    while (
-        model_proc.is_alive()
-        or tracker_proc.is_alive()
-        or notifier_proc.is_alive()
-        or health_pinger_proc.is_alive()
-        or ws_proc.is_alive()
-    ):
-        e: lib_mpex.ChildExit = exit_queue.get()
-        if e.is_exc():
-            logger.error(f"{e.exc_info[0]} {e.exc_info[1]}")
-            logger.error(f"Error in in {e.class_name} (pid {e.pid}): {e.error}")
-            traceback.print_exception(*e.exc_info)
+    while True:
+        try:
+            e: lib_mpex.ChildExit = exit_queue.get(timeout=CHILD_CHECK_INTERVAL_S)
+        except queue.Empty:
+            # a child killed hard (SIGKILL, segfault) never reports its exit,
+            # so periodically check liveness instead of blocking forever:
+            dead = [p for p in procs if not p.is_alive()]
+            if not dead:
+                continue
+            for p in dead:
+                logger.error(
+                    f"child (pid {p.pid}) died unexpectedly (exit code {p.exitcode})"
+                )
             my_exit(True)
         else:
-            logger.info(f"{e.class_name} (pid {e.pid}) exited: {e.error}")
-            my_exit(False)
-
-    model_proc.join()
-    tracker_proc.join()
-    notifier_proc.join()
-    health_pinger_proc.join()
-    ws_proc.join()
+            if e.is_exc():
+                logger.error(f"{e.exc_info[0]} {e.exc_info[1]}")
+                logger.error(f"Error in {e.class_name} (pid {e.pid}): {e.error}")
+                traceback.print_exception(*e.exc_info)
+                my_exit(True)
+            else:
+                logger.info(f"{e.class_name} (pid {e.pid}) exited: {e.error}")
+                my_exit(False)
 
 
 if __name__ == "__main__":
