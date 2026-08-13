@@ -4,6 +4,7 @@ import multiprocessing
 import queue
 import signal
 import sys
+import time
 import traceback
 from typing import Final
 
@@ -16,6 +17,9 @@ from track import PredModel, Tracker
 from web import WebServer
 
 CHILD_CHECK_INTERVAL_S: Final = 5.0
+# kept below Docker's default 10s stop grace period, so a wedged child gets
+# killed here rather than taking the whole container down with it:
+CHILD_SHUTDOWN_TIMEOUT_S: Final = 5.0
 
 
 def main():
@@ -118,8 +122,14 @@ def main():
     finally:
         for p in started:
             p.terminate()
+        deadline = time.monotonic() + CHILD_SHUTDOWN_TIMEOUT_S
         for p in started:
-            p.join()
+            p.join(timeout=max(0.0, deadline - time.monotonic()))
+        for p in started:
+            if p.is_alive():
+                logger.warning(f"child (pid {p.pid}) did not exit; killing it")
+                p.kill()
+                p.join()
 
 
 def supervise(
