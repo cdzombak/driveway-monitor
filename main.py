@@ -67,12 +67,16 @@ def main():
     health_share_ns = health_share_manager.Namespace()
 
     model = PredModel(args.video, config.model, tracks_queue, health_ping_queue)
-    model_proc = multiprocessing.Process(target=model.run, args=(exit_queue,))
+    model_proc = multiprocessing.Process(
+        target=model.run, args=(exit_queue,), name="PredModel"
+    )
     tracker = Tracker(config.tracker, tracks_queue, notifications_queue)
-    tracker_proc = multiprocessing.Process(target=tracker.run, args=(exit_queue,))
+    tracker_proc = multiprocessing.Process(
+        target=tracker.run, args=(exit_queue,), name="Tracker"
+    )
     if args.print:
         notifier_proc = multiprocessing.Process(
-            target=print_notifier, args=(notifications_queue,)
+            target=print_notifier, args=(notifications_queue,), name="print_notifier"
         )
     else:
         notifier = Notifier(
@@ -81,12 +85,14 @@ def main():
             ntfy_web_share_ns,
             ntfy_web_records_dict,
         )
-        notifier_proc = multiprocessing.Process(target=notifier.run, args=(exit_queue,))
+        notifier_proc = multiprocessing.Process(
+            target=notifier.run, args=(exit_queue,), name="Notifier"
+        )
     health_pinger = HealthPinger(
         config.health_pinger, health_ping_queue, health_share_ns
     )
     health_pinger_proc = multiprocessing.Process(
-        target=health_pinger.run, args=(exit_queue,)
+        target=health_pinger.run, args=(exit_queue,), name="HealthPinger"
     )
     ws = WebServer(
         config.web,
@@ -95,7 +101,9 @@ def main():
         notifications_queue,
         health_share_ns,
     )
-    ws_proc = multiprocessing.Process(target=ws.run, args=(exit_queue,))
+    ws_proc = multiprocessing.Process(
+        target=ws.run, args=(exit_queue,), name="WebServer"
+    )
 
     procs = [model_proc, tracker_proc, notifier_proc, health_pinger_proc, ws_proc]
 
@@ -132,7 +140,7 @@ def main():
             p.join(timeout=max(0.0, deadline - time.monotonic()))
         for p in started:
             if p.is_alive():
-                logger.warning(f"child (pid {p.pid}) did not exit; killing it")
+                logger.warning(f"child {p.name} (pid {p.pid}) did not exit; killing it")
                 p.kill()
                 p.join()
 
@@ -153,7 +161,8 @@ def supervise(
                 continue
             for p in dead:
                 logger.error(
-                    f"child (pid {p.pid}) died unexpectedly (exit code {p.exitcode})"
+                    f"child {p.name} (pid {p.pid}) died unexpectedly "
+                    f"(exit code {p.exitcode})"
                 )
             sys.exit(1)
         else:
