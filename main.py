@@ -120,6 +120,11 @@ def main():
         logger.info("interrupted; exiting ...")
         sys.exit(130)
     finally:
+        # a second signal arriving mid-cleanup would raise out of this block and
+        # leave the remaining children unreaped; the join below is bounded, so
+        # ignoring signals here can't hang the process:
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
         for p in started:
             p.terminate()
         deadline = time.monotonic() + CHILD_SHUTDOWN_TIMEOUT_S
