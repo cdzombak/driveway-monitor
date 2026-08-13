@@ -5,7 +5,6 @@ import types
 from pathlib import Path
 from unittest import TestCase
 
-
 waitress_stub = types.ModuleType("waitress")
 waitress_stub.serve = lambda *args, **kwargs: None
 sys.modules.setdefault("waitress", waitress_stub)

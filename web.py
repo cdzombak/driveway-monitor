@@ -4,20 +4,20 @@ import logging
 import multiprocessing
 import os
 from dataclasses import dataclass
-from typing import Optional, Dict, Final
+from typing import Final
 
 import waitress
-from flask import Flask, jsonify, request, make_response
+from flask import Flask, jsonify, make_response, request
 from flask_cors import CORS
 
 import lib_mpex
 from log import LOG_DEFAULT_FMT
-from ntfy import NtfyRecord, FeedbackNotification, FeedbackType
+from ntfy import FeedbackNotification, FeedbackType, NtfyRecord
 
 
 @dataclass
 class WebConfig:
-    log_level: Optional[int] = logging.INFO
+    log_level: int | None = logging.INFO
     port: int = 5550
     bind_to: str = "*"
     liveness_tick_s: float = 30.0
@@ -28,7 +28,7 @@ class WebServer(lib_mpex.ChildProcess):
         self,
         config: WebConfig,
         ntfy_share_ns,
-        ntfy_records: Dict[str, NtfyRecord],
+        ntfy_records: dict[str, NtfyRecord],
         ntfy_queue: multiprocessing.Queue,
         health_share_ns,
     ):
@@ -128,7 +128,7 @@ class WebServer(lib_mpex.ChildProcess):
                 return jsonify({"error": "invalid filename"}), 400
 
             key = fname[:-4]
-            photo_rec: Optional[NtfyRecord] = self._ntfy_records.get(key, None)
+            photo_rec: NtfyRecord | None = self._ntfy_records.get(key, None)
             if photo_rec is None:
                 return jsonify({"error": "record not found"}), 404
             if photo_rec.jpeg_image is None:

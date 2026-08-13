@@ -4,7 +4,6 @@ import sys
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from types import TracebackType
-from typing import Type, Optional
 
 from tblib import pickling_support
 
@@ -14,7 +13,7 @@ pickling_support.install()
 @dataclass
 class ChildExit:
     exc_info: (
-        tuple[Type[BaseException], BaseException, TracebackType]
+        tuple[type[BaseException], BaseException, TracebackType]
         | tuple[None, None, None]
     )
     pid: int
@@ -42,11 +41,11 @@ class ChildProcess(ABC):
 
     def run(self, ex_queue: multiprocessing.Queue):
         reset_signal_handlers()
-        ex_record: Optional[ChildExit] = None
+        ex_record: ChildExit | None = None
 
         try:
             self._run()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - must report any child failure to the parent
             ex_record = ChildExit(
                 exc_info=sys.exc_info(),
                 pid=multiprocessing.current_process().pid,
@@ -64,6 +63,6 @@ class ChildProcess(ABC):
 
         try:
             ex_queue.put(ex_record)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - last-ditch handler before exiting the child
             print("PANIC:ex_queue.put exception:", e)
             sys.exit(1)

@@ -2,7 +2,6 @@ import logging
 import multiprocessing
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
 
 import requests
 
@@ -12,7 +11,7 @@ from log import LOG_DEFAULT_FMT
 
 @dataclass
 class HealthPing:
-    url: Optional[str]
+    url: str | None
     at_t: datetime
 
 

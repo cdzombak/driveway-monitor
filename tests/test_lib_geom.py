@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from lib_geom import Point, Vector, Box
+from lib_geom import Box, Point, Vector
 
 
 class TestVector(TestCase):

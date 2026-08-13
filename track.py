@@ -5,7 +5,7 @@ import multiprocessing
 import os
 import time
 from dataclasses import dataclass
-from typing import List, Optional, Final
+from typing import Final
 
 # noinspection PyPackageRequirements
 import celpy
@@ -24,7 +24,7 @@ except ImportError:
 import lib_dmutil
 import lib_mpex
 from health import HealthPing
-from lib_geom import Point, Box, Vector
+from lib_geom import Box, Point, Vector
 from log import LOG_DEFAULT_FMT
 from ntfy import ObjectNotification
 
@@ -55,7 +55,7 @@ class TrackPrediction:
 
 @dataclass
 class Track:
-    predictions: List[TrackPrediction]
+    predictions: list[TrackPrediction]
     best_image: cv2.typing.MatLike
     best_image_coverage: float
     is_model_track: bool
@@ -164,14 +164,14 @@ class VideoEnded(Exception):
 
 @dataclass
 class ModelConfig:
-    log_level: Optional[int] = logging.INFO
-    device: Optional[str] = None
-    half: Optional[bool] = None
+    log_level: int | None = logging.INFO
+    device: str | None = None
+    half: bool | None = None
     confidence: float = 0.5
     iou: float = 0.15
     max_det: int = 5
     liveness_tick_s: float = 30.0
-    healthcheck_ping_url: Optional[str] = None
+    healthcheck_ping_url: str | None = None
     video_read_timeout_ms: int = (
         15000  # Timeout for VideoCapture read operations (milliseconds)
     )
@@ -229,7 +229,7 @@ class PredModel(lib_mpex.ChildProcess):
                 logger.warning(
                     "video stream ended or stalled; will try to reopen the source"
                 )
-            except (IOError, cv2.error) as exc:
+            except (OSError, cv2.error) as exc:
                 if not is_stream:
                     raise
                 logger.warning(f"video stream error '{exc}'; will try to reopen")
@@ -260,7 +260,7 @@ class PredModel(lib_mpex.ChildProcess):
         liveness_tick_t: Final = datetime.timedelta(
             seconds=self._config.liveness_tick_s
         )
-        last_liveness_tick_at: Optional[datetime.datetime] = None
+        last_liveness_tick_at: datetime.datetime | None = None
         frames_since_last_liveness_tick = 0
         logger.info(f"opening video source {self._in_fname}")
         self._frames_seen_last_run = 0
@@ -273,7 +273,7 @@ class PredModel(lib_mpex.ChildProcess):
                 f"VideoCapture timeouts set to {self._config.video_read_timeout_ms}ms"
             )
             if not cap.isOpened():
-                raise IOError(f"failed to open video source {self._in_fname}")
+                raise OSError(f"failed to open video source {self._in_fname}")
             while cap.isOpened():
                 success, frame = cap.read()
                 if success and frame is not None:
@@ -370,7 +370,7 @@ class PredModel(lib_mpex.ChildProcess):
 
 @dataclass
 class TrackerConfig:
-    log_level: Optional[int] = logging.INFO
+    log_level: int | None = logging.INFO
     # prune out tracks that have seen no activity in this many seconds.
     # this prevents them from being appended to by new motion:
     inactive_track_prune_s: float = 1.0
@@ -378,18 +378,18 @@ class TrackerConfig:
     # assuming best case (classification is the same):
     track_connect_min_overlap: float = 0.2
     # only notify if the track is classified as one of these:
-    notify_classification_allowlist: Optional[List[str]] = None
+    notify_classification_allowlist: list[str] | None = None
     # don't notify if the track is classified as one of these:
-    notify_classification_blocklist: Optional[List[str]] = None
+    notify_classification_blocklist: list[str] | None = None
     # only notify if the track's length (in time) is at least this many seconds:
     notify_min_track_length_s: float = 1
     # allows customizing the minimum track length, in seconds, per classification
     # (e.g. a person walking might need to be tracked for longer than a car to
     # warrant a notification):
     notify_min_track_length_s_per_classification: dict[str, float] = dataclasses.field(
-        default_factory=lambda: {}
+        default_factory=dict
     )
-    notify_track_cel: Optional[str] = None
+    notify_track_cel: str | None = None
 
 
 class Tracker(lib_mpex.ChildProcess):
@@ -402,7 +402,7 @@ class Tracker(lib_mpex.ChildProcess):
         self._config = config
         self._input_queue = input_queue
         self._output_queue = output_queue
-        self._tracks = list()
+        self._tracks = []
 
     def _run(self):
         logger = logging.getLogger(__name__ + ".Tracker")
@@ -410,7 +410,7 @@ class Tracker(lib_mpex.ChildProcess):
         logger.info("starting tracker")
 
         cel_env = celpy.Environment()
-        notify_cel_program: Optional[celpy.Runner] = None
+        notify_cel_program: celpy.Runner | None = None
         if self._config.notify_track_cel:
             notify_cel_ast = cel_env.compile(self._config.notify_track_cel)
             notify_cel_program = cel_env.program(notify_cel_ast)
@@ -440,7 +440,7 @@ class Tracker(lib_mpex.ChildProcess):
             ]
 
             # connect to a preexisting track if possible:
-            track: Optional[Track] = self._select_existing_track(p)
+            track: Track | None = self._select_existing_track(p)
 
             # update matching track or create a new track if necessary:
             if track is not None:
@@ -520,7 +520,7 @@ class Tracker(lib_mpex.ChildProcess):
             )
 
             # at this point the track has met all criteria; send notification:
-            jpeg: Optional[bytes] = None
+            jpeg: bytes | None = None
             ok, jpegarr = cv2.imencode(".jpg", track.best_image)
             if ok:
                 jpeg = jpegarr.tobytes()
@@ -537,8 +537,8 @@ class Tracker(lib_mpex.ChildProcess):
             )
             track.triggered_notification = True
 
-    def _select_existing_track(self, p: TrackPrediction) -> Optional[Track]:
-        track: Optional[Track] = None
+    def _select_existing_track(self, p: TrackPrediction) -> Track | None:
+        track: Track | None = None
         best_overlap = 0.0
         for candidate in self._tracks:
             overlap_needed = self._config.track_connect_min_overlap

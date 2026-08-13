@@ -1,10 +1,9 @@
 import json
 import logging
 from dataclasses import dataclass
-from typing import Optional
 
 from health import HealthPingerConfig
-from ntfy import NtfyConfig, ImageAttachMethod, NtfyPriority, EnrichmentType
+from ntfy import EnrichmentType, ImageAttachMethod, NtfyConfig, NtfyPriority
 from track import ModelConfig, TrackerConfig
 from web import WebConfig
 
@@ -23,7 +22,7 @@ class ConfigValidationError(ValueError):
 
 
 def config_from_file(
-    config_file: Optional[str],
+    config_file: str | None,
 ) -> Config:
     """
     Load a Config object from a JSON file.
@@ -304,7 +303,7 @@ def config_from_file(
             try:
                 with open(v) as f:
                     f.read()
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - any read failure is a config error
                 raise ConfigValidationError(
                     f"enrichment.prompt_files: error reading file '{v}': {e}"
                 )

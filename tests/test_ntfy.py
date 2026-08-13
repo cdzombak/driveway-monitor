@@ -3,14 +3,14 @@ from unittest import TestCase
 from unittest.mock import Mock
 
 from ntfy import (
-    ImageAttachMethod,
-    NtfyPriority,
     EnrichmentType,
-    ObjectNotification,
     FeedbackNotification,
     FeedbackType,
+    ImageAttachMethod,
     Notifier,
     NtfyConfig,
+    NtfyPriority,
+    ObjectNotification,
 )
 
 

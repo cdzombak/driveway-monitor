@@ -8,7 +8,7 @@ import os.path
 import time
 from abc import ABC
 from enum import Enum
-from typing import Dict, Optional, Final
+from typing import Final
 
 import requests
 
@@ -70,7 +70,7 @@ NOTIF_PRIORITY_MUTED: Final = NtfyPriority.MIN.value
 class NtfyRecord:
     id: str
     expires_at: datetime.datetime
-    jpeg_image: Optional[bytes]
+    jpeg_image: bytes | None
 
 
 class EnrichmentType(Enum):
@@ -92,35 +92,35 @@ class EnrichmentConfig:
     endpoint: str = ""
     keep_alive: str = "1440m"
     model: str = "llava"
-    prompt_files: Dict[str, str] = dataclasses.field(default_factory=lambda: {})
+    prompt_files: dict[str, str] = dataclasses.field(default_factory=dict)
     timeout_s: float = 5.0
-    api_key: Optional[str] = None
+    api_key: str | None = None
 
 
 @dataclasses.dataclass
 class NtfyConfig:
     enrichment: EnrichmentConfig = dataclasses.field(default_factory=EnrichmentConfig)
     external_base_url: str = "http://localhost:5550"
-    log_level: Optional[int] = logging.INFO
+    log_level: int | None = logging.INFO
     topic: str = "driveway-monitor"
     server: str = "https://ntfy.sh"
-    token: Optional[str] = None
+    token: str | None = None
     debounce_threshold_s: float = 60.0
     default_priority: NtfyPriority = NtfyPriority.DEFAULT
-    priorities: Dict[str, NtfyPriority] = dataclasses.field(default_factory=lambda: {})
+    priorities: dict[str, NtfyPriority] = dataclasses.field(default_factory=dict)
     req_timeout_s: float = 10.0
-    image_method: Optional[ImageAttachMethod] = None
-    images_cc_dir: Optional[str] = None
+    image_method: ImageAttachMethod | None = None
+    images_cc_dir: str | None = None
 
 
 class Notification(ABC):
     def message(self) -> str:
         raise NotImplementedError
 
-    def title(self) -> Optional[str]:
+    def title(self) -> str | None:
         raise NotImplementedError
 
-    def ntfy_tags(self) -> Optional[str]:
+    def ntfy_tags(self) -> str | None:
         raise NotImplementedError
 
 
@@ -130,8 +130,8 @@ class ObjectNotification(Notification):
     classification: str
     event: str
     id: str
-    jpeg_image: Optional[bytes]
-    enriched_class: Optional[str] = None
+    jpeg_image: bytes | None
+    enriched_class: str | None = None
 
     def message(self):
         if self.enriched_class:
@@ -161,7 +161,7 @@ class FeedbackType(Enum):
 class FeedbackNotification(Notification):
     type: FeedbackType
     key: str
-    mute_seconds: Optional[int] = None
+    mute_seconds: int | None = None
 
     def message(self):
         return f"Notifications {self.type.value}."
@@ -188,18 +188,19 @@ class Notifier(lib_mpex.ChildProcess):
         config: NtfyConfig,
         input_queue: multiprocessing.Queue,
         web_share_ns,
-        records_dict: Dict[str, NtfyRecord],
+        records_dict: dict[str, NtfyRecord],
     ):
         self._config = config
-        if self._config.external_base_url.endswith("/"):
-            self._config.external_base_url = self._config.external_base_url[:-1]
+        self._config.external_base_url = self._config.external_base_url.removesuffix(
+            "/"
+        )
         self._input_queue = input_queue
-        self._last_notification: Dict[str, datetime.datetime] = {}
+        self._last_notification: dict[str, datetime.datetime] = {}
         self._web_share_ns = web_share_ns
         self._web_share_ns.mute_until = None
         self._records = records_dict
 
-    def _prep_ntfy_headers(self, n: Notification) -> Dict[str, str]:
+    def _prep_ntfy_headers(self, n: Notification) -> dict[str, str]:
         headers = {}
 
         tags = n.ntfy_tags()
@@ -277,12 +278,11 @@ class Notifier(lib_mpex.ChildProcess):
             json_str = json_str[7:]  # Remove ```json
         elif json_str.startswith("```"):
             json_str = json_str[3:]  # Remove ```
-        if json_str.endswith("```"):
-            json_str = json_str[:-3]  # Remove trailing ```
+        json_str = json_str.removesuffix("```")  # Remove trailing ```
         return json_str.strip()
 
     def _suppress(self, logger, n: ObjectNotification) -> bool:
-        mute_until: Optional[datetime.datetime] = self._web_share_ns.mute_until
+        mute_until: datetime.datetime | None = self._web_share_ns.mute_until
         if mute_until and n.t < mute_until:
             logger.info(
                 f"notification '{n.title()}' suppressed due to mute until {mute_until}"
@@ -320,7 +320,7 @@ class Notifier(lib_mpex.ChildProcess):
         try:
             with open(prompt_file, "r") as f:
                 enrichment_prompt = f.read()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - enrichment is best-effort, never block notification
             logger.error(f"error reading enrichment prompt file '{prompt_file}': {e}")
             return n
         if not enrichment_prompt:
@@ -402,7 +402,7 @@ class Notifier(lib_mpex.ChildProcess):
         try:
             with open(prompt_file, "r") as f:
                 enrichment_prompt = f.read()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - enrichment is best-effort, never block notification
             logger.error(f"error reading enrichment prompt file '{prompt_file}': {e}")
             return n
         if not enrichment_prompt:
@@ -535,8 +535,7 @@ class Notifier(lib_mpex.ChildProcess):
                         dst_path = os.path.join(self._config.images_cc_dir, dst_fname)
                         with open(dst_path, "wb") as f:
                             f.write(n.jpeg_image)
-                    except Exception as e:
-                        # Log error but continue - image write failure shouldn't block notification
+                    except Exception as e:  # noqa: BLE001 - image write failure shouldn't block notification
                         logger.error(f"error writing image to disk: {e}")
                 if self._suppress(logger, n):
                     continue

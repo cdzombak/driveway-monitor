@@ -3,14 +3,14 @@ from unittest import TestCase
 
 import numpy as np
 
-from lib_geom import Point, Box, Vector
+from lib_geom import Box, Point, Vector
 from track import (
-    TrackPrediction,
-    Track,
-    PredModel,
     ModelConfig,
+    PredModel,
+    Track,
     Tracker,
     TrackerConfig,
+    TrackPrediction,
 )
 
 
