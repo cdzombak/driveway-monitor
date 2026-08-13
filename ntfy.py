@@ -582,6 +582,7 @@ class Notifier(lib_mpex.ChildProcess):
 
 
 def print_notifier(notifications_queue: multiprocessing.Queue):
+    lib_mpex.reset_signal_handlers()
     while True:
         n: ObjectNotification = notifications_queue.get()
         print(f"***NOTIFICATION*** at {n.t}: {n.classification.capitalize()} {n.event}")

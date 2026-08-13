@@ -1,4 +1,5 @@
 import multiprocessing
+import signal
 import sys
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -24,12 +25,23 @@ class ChildExit:
         return self.exc_info[0] is not None
 
 
+def reset_signal_handlers():
+    """Restore default signal dispositions in a child process.
+
+    A forking start method inherits the parent's handlers; a child that runs the
+    parent's SIGTERM handler exits via SystemExit instead of dying immediately,
+    which can leave it alive if it owns a non-daemon thread.
+    """
+    signal.signal(signal.SIGTERM, signal.SIG_DFL)
+
+
 class ChildProcess(ABC):
     @abstractmethod
     def _run(self):
         raise NotImplementedError
 
     def run(self, ex_queue: multiprocessing.Queue):
+        reset_signal_handlers()
         ex_record: Optional[ChildExit] = None
 
         try:
