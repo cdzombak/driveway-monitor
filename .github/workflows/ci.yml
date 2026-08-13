@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Derive version string
         id: bin_version
         run: echo "bin_version=$(./.version.sh)" >> "$GITHUB_OUTPUT"
@@ -77,9 +77,9 @@ jobs:
     name: Lint & Format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Install Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: "pip"
@@ -104,9 +104,9 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Install Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: "pip"
@@ -133,7 +133,7 @@ jobs:
       #   run: curl -fsSL https://raw.githubusercontent.com/kou/arrow/e49d8ae15583ceff03237571569099a6ad62be32/ci/scripts/util_free_space.sh | bash
 
       - name: Checkout
-        uses: namespacelabs/nscloud-checkout-action@v8
+        uses: namespacelabs/nscloud-checkout-action@v9
 
       - name: Login to Docker Hub
         if: needs.meta.outputs.is_pull_request != 'true'
@@ -187,7 +187,7 @@ jobs:
       packages: write
     steps:
       - name: Checkout
-        uses: namespacelabs/nscloud-checkout-action@v8
+        uses: namespacelabs/nscloud-checkout-action@v9
 
       - name: Login to Docker Hub
         if: needs.meta.outputs.is_pull_request != 'true'
@@ -240,7 +240,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Create GitHub release
         uses: softprops/action-gh-release@v3
         with:
@@ -265,7 +265,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Update running major/minor version tags
         uses: sersoft-gmbh/running-release-tags-action@v4
         with:
@@ -280,7 +280,7 @@ jobs:
     needs: [meta, lint, test, docker-amd64, docker-arm64, release, tags]
     steps:
       - name: Send success notification
-        uses: niniyas/ntfy-action@2ebc39afb288e8b01804a6ec1be0db2e7a458387
+        uses: niniyas/ntfy-action@2fd8963f2092903578ac7303d30be47a675fc182 # v1.0.6
         if: ${{ !contains(needs.*.result, 'failure') && (needs.meta.outputs.is_release == 'true' || needs.meta.outputs.is_prerelease == 'true') }}
         with:
           url: "https://ntfy.cdzombak.net"
@@ -291,7 +291,7 @@ jobs:
           title: ${{ github.event.repository.name }} ${{ needs.meta.outputs.bin_version }} available
           details: ${{ github.event.repository.name }} version ${{ needs.meta.outputs.bin_version }} is now available.
       - name: Send failure notification
-        uses: niniyas/ntfy-action@2ebc39afb288e8b01804a6ec1be0db2e7a458387
+        uses: niniyas/ntfy-action@2fd8963f2092903578ac7303d30be47a675fc182 # v1.0.6
         if: ${{ contains(needs.*.result, 'failure') }}
         with:
           url: "https://ntfy.cdzombak.net"
